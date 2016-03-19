@@ -1,5 +1,6 @@
 package sample.controller;
 
+import com.mysql.jdbc.PreparedStatement;
 import com.mysql.jdbc.ResultSet;
 import com.mysql.jdbc.Statement;
 import javafx.collections.FXCollections;
@@ -20,6 +21,8 @@ import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import sample.Main;
+import sample.model.Filters.FilterColection;
+import sample.model.ResearchParam;
 import sample.tools.ImageOperations;
 import sample.core.DB;
 
@@ -59,12 +62,20 @@ public class StartController {
     @FXML
     private Button loadImageButton;
     @FXML
+    private Button nextImSettingButton;
+
+    @FXML
     private Button setPreProcSettingsButton;
     @FXML
     private Button saveChangeButton;
     @FXML
     private Button correctionButton;
 
+    @FXML
+    private Button researchNameLabel;
+
+    @FXML
+    private ComboBox<FilterColection> comboBox;
     @FXML
     private TextField researchNameField;
 
@@ -74,8 +85,8 @@ public class StartController {
 
     @FXML
     private Label researchName;
-    @FXML
-    private Label researchPathLabel;
+    //@FXML
+    //private Label researchPathLabel;
 
     @FXML
     protected ImageView preProcImage;
@@ -84,6 +95,7 @@ public class StartController {
     @FXML
     protected ImageView originalImage;
 
+    private ObservableList<FilterColection> comboBoxData = FXCollections.observableArrayList();
 
 
     private boolean okClicked = false;
@@ -125,6 +137,9 @@ public class StartController {
      * The constructor is called before the initialize() method.
      */
     public StartController(){
+
+        comboBoxData.add(new FilterColection("0", "Новий клас"));
+
     }
 
     /**
@@ -149,30 +164,120 @@ public class StartController {
         this.image = new Mat();
         this.planes = new ArrayList<>();
 
+
+
+        comboBox.setItems(comboBoxData);
+
     }
+
+    @FXML
+    private void nextImSetting(){
+        try {
+            this.showNucleiClasses();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleComboBoxAction() {
+
+        FilterColection selectedFilter = comboBox.getSelectionModel().getSelectedItem();
+        if(selectedFilter.getId() == "0"){
+            researchNameField.setVisible(true);
+            researchNameButton.setVisible(true);
+        }else{
+            ResearchParam.setResearch_id(Integer.parseInt(selectedFilter.getId()));
+            researchNameField.setVisible(false);
+            researchNameButton.setVisible(false);
+            loadImageButton.setVisible(true);
+
+        }
+        System.out.println(selectedFilter.getId());
+    }
+
+    public void showNucleiClasses()throws java.sql.SQLException, ClassNotFoundException{
+
+        ResultSet rs = null;
+        //Connection c = DB.connect("127.0.0.1","3306","ams","root","oleh123");
+
+        Connection c = DB.getConn();
+        Statement stmt = (Statement) c.createStatement();
+
+        String query = "select id, name from research_name";
+        try {
+            rs = (ResultSet) stmt.executeQuery(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        while (rs.next()) {
+            int id = rs.getInt(1);
+            String name = rs.getString(2);
+            //String surname = rs.getString(3);
+            System.out.printf("value: %d, roiGroupMeasurementNameId_KEY: %s %n", id, name);
+
+            comboBoxData.add(new FilterColection(Integer.toString(id), name));
+        }
+
+        //researchNameLabel.setVisible(true);
+        comboBox.setVisible(true);
+
+    }
+
 
     public void setStage(Stage stage) {
         this.stage = stage;
     }
 
     @FXML
-    public void setResearchName() throws IOException{
-
-        //HistogramEQ h = new HistogramEQ();
-
-        //h.main1();
+    public void setResearchName() throws IOException, SQLException, ClassNotFoundException {
 
         this.researchname = researchNameField.getText();
 
-        researchPathLabel.setVisible(true);
+        this.insertResearchNameToDb(this.researchname);
+
+
+       // ResearchParam.setResearch_id(Integer.parseInt(selectedFilter.getId()));
+
+
+        //researchPathLabel.setVisible(true);
         researchPathField.setVisible(true);
         researchPathButton.setVisible(true);
-        this.setResearchPath(this.researchname);
+        //this.setResearchPath(this.researchname);
+
+        loadImageButton.setVisible(true);
     }
 
     @FXML
-    public void setResearchPath(String rsname){
+    public void imageName(String imgN) throws SQLException {
 
+        System.out.print(imgN);
+        System.out.println(ResearchParam.getResearch_id());
+
+        ResearchParam.setImg_name(imgN);
+
+        ResultSet rs = null;
+        Connection c = DB.getConn();
+
+            Statement stmt = (Statement) c.createStatement();
+
+        String query = "INSERT INTO images (research_id, image_name) VALUES (?,?)";
+        PreparedStatement preparedStmt = null;
+
+        preparedStmt = (PreparedStatement) c.prepareStatement(query);
+
+        preparedStmt.setInt  (1, ResearchParam.getResearch_id());
+        preparedStmt.setString  (2, imgN);
+
+        preparedStmt.executeUpdate();
+    }
+
+
+
+    @FXML
+    public void setResearchPath(String rsname){
 
         File file = new File(rsname);
         String path = file.getAbsolutePath();
@@ -280,10 +385,18 @@ public class StartController {
 
             sample.model.Image.setImageMat(this.image);
 
-            originalImagePath = file.getAbsolutePath();
+            originalImagePath = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf("\\")+1);
+            try {
+                this.imageName(originalImagePath);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             Mat newImage = sample.model.Image.getImageMat();
             // show the image
             this.setOriginalImage(newImage);
+
+            // call to object detection function
+            this.SimpleDetect();
 
         }
         else
@@ -295,6 +408,44 @@ public class StartController {
         }
     }
 
+
+    @FXML
+    public void insertResearchNameToDb(String res_name) throws java.sql.SQLException, ClassNotFoundException {
+
+        ResultSet rs = null;
+        Connection c = DB.getConn();
+        Statement stmt = (Statement) c.createStatement();
+
+        String query = "INSERT INTO research_name (name) VALUES (?)";
+        PreparedStatement preparedStmt = (PreparedStatement) c.prepareStatement(query);
+        preparedStmt.setString  (1, res_name);
+
+        preparedStmt.executeUpdate();
+
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        ResultSet rs_1 = null;
+        Statement stmt_1 = (Statement) c.createStatement();
+        String query_1 = "select MAX(id) from research_name";
+        try {
+            rs_1 = (ResultSet) stmt_1.executeQuery(query_1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        while (rs_1.next()) {
+            int size = rs_1.getInt(1);
+            ResearchParam.setResearch_id(size);
+
+            System.out.printf("size: "+size);
+        }
+
+
+
+    }
 
     @FXML
     public void saveDataToDb() throws java.sql.SQLException, ClassNotFoundException {

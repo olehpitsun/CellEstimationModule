@@ -3,6 +3,19 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
+<?import javafx.collections.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import java.lang.*?>
+<?import javafx.collections.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import java.lang.String?>
+
+
 <AnchorPane prefHeight="363.0" prefWidth="693.0" stylesheets="@DarkTheme.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.controller.StartController">
     <children>
         <SplitPane dividerPositions="0.4126984126984127" layoutX="153.0" layoutY="70.0" prefHeight="363.0" prefWidth="293.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
@@ -29,19 +42,34 @@
                             </rowConstraints>
                             <children>
                                 <Button mnemonicParsing="true" onAction="#handleDBConnect" text="Підкл. до БД" />
-                                <Label fx:id="researchNameLabel" text="Назва досліду" visible="true" GridPane.rowIndex="1" />
-                                <TextField fx:id="researchNameField" text="Назва досліду" visible="true" GridPane.rowIndex="1" />
 
-                                <Label fx:id="researchPathLabel" text="Шлях до теки:" visible="false" GridPane.rowIndex="2" />
-                                <TextField fx:id="researchPathField" visible="false" GridPane.rowIndex="3" />
+                                <Button fx:id="nextImSettingButton" mnemonicParsing="false" onAction="#nextImSetting" text="Далі" visible="true" GridPane.rowIndex="1" GridPane.columnIndex="0" />
 
-                                <Button fx:id="loadImageButton" mnemonicParsing="false" onAction="#chooseFile" text="Завантажити зображення" visible="false" GridPane.rowIndex="5" />
+                                <Label  text="Клас" visible="true" GridPane.rowIndex="2" GridPane.columnIndex="0" />
 
-                                <Label fx:id="firstNameLabel" styleClass="label-bright" text="" GridPane.columnIndex="1" />
-                                <Button fx:id="researchNameButton" defaultButton="true" minWidth="63.0" mnemonicParsing="false" onAction="#setResearchName" prefHeight="28.0" prefWidth="63.0" text="OK" visible="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                <ComboBox fx:id="comboBox" layoutX="30.0" onAction="#handleComboBoxAction" visible="false" GridPane.rowIndex="2" GridPane.columnIndex="1" >
+                                    <items>
+                                        <FXCollections fx:factory="observableArrayList">
+                                            <String fx:value="Item 1" />
+                                            <String fx:value="Item 2" />
+                                            <String fx:value="Item 3" />
+                                        </FXCollections>
+                                    </items>
+                                </ComboBox>
 
-                                <Button fx:id="researchPathButton" defaultButton="true" mnemonicParsing="false" onAction="#setFullPathName" prefHeight="14.0" prefWidth="63.0" text="OK" visible="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                <Button fx:id="detectRegionButton" defaultButton="true" alignment="CENTER" disable="false" onAction="#SimpleDetect" text="Обчислення" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                                <TextField fx:id="researchNameField" text="Клас" visible="false" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                                <Button fx:id="researchNameButton" defaultButton="true" minWidth="63.0" mnemonicParsing="false" onAction="#setResearchName" prefHeight="28.0" prefWidth="63.0" text="OK" visible="false" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+
+                                <Label fx:id="researchPathLabel" text="Шлях до теки:" visible="false" GridPane.rowIndex="5" />
+                                <TextField fx:id="researchPathField" visible="false" GridPane.rowIndex="5" />
+
+                                <Button fx:id="loadImageButton" mnemonicParsing="false" onAction="#chooseFile" text="Завантажити зображення" visible="false" GridPane.rowIndex="4" />
+                                <Button fx:id="detectRegionButton" defaultButton="true" alignment="CENTER" disable="false" onAction="#SimpleDetect" text="Обчислення" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+
+
+
+
+                                <Button fx:id="researchPathButton" defaultButton="true" mnemonicParsing="false" onAction="#setFullPathName" prefHeight="14.0" prefWidth="63.0" text="OK" visible="false" GridPane.columnIndex="1" GridPane.rowIndex="7" />
                                 <Button fx:id="saveDataToDbButton" defaultButton="true" alignment="CENTER" disable="false" onAction="#saveDataToDb" text="Обчислення" GridPane.columnIndex="0" GridPane.rowIndex="7" />
 
 
