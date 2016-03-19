@@ -41,14 +41,10 @@
                                 <Button fx:id="researchNameButton" defaultButton="true" minWidth="63.0" mnemonicParsing="false" onAction="#setResearchName" prefHeight="28.0" prefWidth="63.0" text="OK" visible="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
                                 <Button fx:id="researchPathButton" defaultButton="true" mnemonicParsing="false" onAction="#setFullPathName" prefHeight="14.0" prefWidth="63.0" text="OK" visible="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-                                <Button fx:id="detectRegionButton" alignment="CENTER" disable="false" onAction="#detectByColor" text="Звичайне" GridPane.rowIndex="4"/>
-                                <Button fx:id="autoButton" defaultButton="true" mnemonicParsing="false" onAction="#autoSetting" text="Автоматично" visible="true" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                                <Button fx:id="detectRegionButton" defaultButton="true" alignment="CENTER" disable="false" onAction="#SimpleDetect" text="Обчислення" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                                <Button fx:id="saveDataToDbButton" defaultButton="true" alignment="CENTER" disable="false" onAction="#saveDataToDb" text="Обчислення" GridPane.columnIndex="0" GridPane.rowIndex="7" />
 
-                                <Label  fx:id="mseLabel" styleClass="label-bright" text="середньо-квадр. помилка" GridPane.columnIndex="0" GridPane.rowIndex="7" />
-                                <Label  fx:id="mseResLabel" styleClass="label-bright" text="" GridPane.columnIndex="1" GridPane.rowIndex="7" />
 
-                                <Label  fx:id="psnrLabel" styleClass="label-bright" text="PSNR" GridPane.columnIndex="0" GridPane.rowIndex="8" />
-                                <Label  fx:id="psnrResLabel" styleClass="label-bright" text="" GridPane.columnIndex="1" GridPane.rowIndex="8" />
 
                             </children>
                         </GridPane>
@@ -60,7 +56,7 @@
                 </AnchorPane>
                 <AnchorPane minHeight="0.0" minWidth="525.0" prefHeight="362.0" prefWidth="530.0" styleClass="background" SplitPane.resizableWithParent="false">
                    <children>
-                       <ImageView fx:id="originalImage" fitHeight="136.0" fitWidth="173.0" layoutX="8.0" layoutY="14.0" pickOnBounds="true" preserveRatio="true" />
+                       <ImageView fx:id="originalImage" fitHeight="650.0" fitWidth="650.0" layoutX="8.0" layoutY="14.0" pickOnBounds="true" preserveRatio="true" />
                        <ImageView fx:id="preProcImage"  fitHeight="136.0" fitWidth="173.0" layoutX="494.0" layoutY="10.0" pickOnBounds="true" preserveRatio="true" />
                         <ImageView  fx:id="segmentationImage" fitHeight="136.0" fitWidth="173.0" layoutX="8.0" layoutY="361.0" pickOnBounds="true" preserveRatio="true" />
                    </children>

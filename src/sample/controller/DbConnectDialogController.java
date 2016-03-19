@@ -1,4 +1,4 @@
-package sample.view;
+package sample.controller;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -89,6 +89,8 @@ public class DbConnectDialogController {
             try {
                 c = DB.connect(hostField.getText(), portField.getText(), dbnameField.getText(), userField.getText(), passwordField.getText());
 
+                DB.setConn(c);//
+
             } catch (SQLException e) {
 
                 // Show the error message.
@@ -125,10 +127,12 @@ public class DbConnectDialogController {
 
             okClicked = true;
             dialogStage.close();
-            c.close();
+            //c.close();
 
         }
     }
+
+
 
     /**
      * Called when the user clicks cancel@FXML

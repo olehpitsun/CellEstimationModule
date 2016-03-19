@@ -1,5 +1,7 @@
 package sample.controller;
 
+import com.mysql.jdbc.ResultSet;
+import com.mysql.jdbc.Statement;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -19,19 +21,22 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import sample.Main;
 import sample.tools.ImageOperations;
-
+import sample.core.DB;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Vector;
-
+import java.sql.Connection;
+import java.sql.SQLException;
 import sample.model.Filters.FiltersOperations;
 import sample.model.HistogramEQ;
 import sample.model.PreProcessing.PreProcessingOperation;
@@ -42,6 +47,8 @@ import sample.tools.ImageOperations;
 import sample.tools.ValidateOperations;
 import sample.util.Estimate;
 import sample.util.PreProcessingParam;
+
+import static sample.controller.DbConnectDialogController.*;
 
 public class StartController {
 
@@ -111,6 +118,7 @@ public class StartController {
     private Label mseResLabel;
     @FXML
     private Label psnrResLabel;
+
 
     /**
      * The constructor.
@@ -289,9 +297,39 @@ public class StartController {
 
 
     @FXML
+    public void saveDataToDb() throws java.sql.SQLException, ClassNotFoundException {
+
+        //Connection con = getConn();
+        //Statement stmt;
+        ResultSet rs = null;
+        //Connection c = DB.connect("127.0.0.1","3306","ams","root","oleh123");
+
+        Connection c = DB.getConn();
+        Statement stmt = (Statement) c.createStatement();
+
+        String query = "select value, roiGroupMeasurementNameId_KEY from roigrouphbm_roimeasurementhbms";
+        try {
+            rs = (ResultSet) stmt.executeQuery(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        while (rs.next()) {
+            double value = rs.getDouble(1);
+            int roiGroupMeasurementNameId_KEY = rs.getInt(2);
+            //String surname = rs.getString(3);
+            System.out.printf("value: %f, roiGroupMeasurementNameId_KEY: %d %n", value, roiGroupMeasurementNameId_KEY);
+        }
+        c.close();
+        //this.image= this.changedimage ;
+        //sample.model.Image.setImageMat(this.image);
+
+    }
+
+
+    @FXML
     public void detectByColor(){
 
-        Mat src = this.image;
+        Mat src = this.optimizeImageDim(this.image);
         Mat mHsvMat = new Mat();
         Mat mMaskMat = new Mat();
         Mat mDilatedMat = new Mat();
@@ -351,7 +389,7 @@ public class StartController {
 
         Mat src = this.image;
         Mat src_gray = new Mat();
-        int thresh = 0;
+        int thresh = 100;
         int max_thresh = 255;
 
         Imgproc.cvtColor(src, src_gray, Imgproc.COLOR_BGR2GRAY);
@@ -361,40 +399,45 @@ public class StartController {
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
 
-        Imgproc.Canny(src_gray, canny_output, thresh, thresh * 2, 3, false);
-        Imgproc.findContours(canny_output, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        Mat mHsvMat = new Mat();
+        Mat mMaskMat = new Mat();
+
+        Scalar lowerThreshold = new Scalar ( 0, 0, 0 ); // Blue color – lower hsv values
+        Scalar upperThreshold = new Scalar ( 10, 10, 10 ); // Blue color – higher hsv values
+        Core.inRange(src, lowerThreshold, upperThreshold, mMaskMat);
+
+        //Imgproc.Canny(src_gray, canny_output, thresh, thresh * 2, 3, false);
+        Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
         List<Moments> mu = new ArrayList<Moments>(contours.size());
-        for( int i = 0; i < contours.size(); i++ )
-        {
-            mu.add(i, Imgproc.moments(contours.get(i), false));
-        }
-
         List<Point> mc = new ArrayList<Point>(contours.size());
+        Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
+        Rect rect ;
 
-        for( int i = 0; i < contours.size(); i++ )
+        for( int i = 0; i< contours.size(); i++ )
         {
+            rect = Imgproc.boundingRect(contours.get(i));
+            mu.add(i, Imgproc.moments(contours.get(i), false));
             mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
-        }
 
-        Mat drawing = Mat.zeros( canny_output.size(), CvType.CV_8UC3 );
-        for( int i = 0; i< contours.size(); i++ )
-        {
-            Imgproc.drawContours(drawing, contours, i, new Scalar(0, 0, 255), 2, 1, hierarchy, 0, new Point());
-            Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 8, 0);
-        }
+            Moments p = mu.get(i);
+            int x = (int) (p.get_m10() / p.get_m00());
+            int y = (int) (p.get_m01() / p.get_m00());
 
-        for( int i = 0; i< contours.size(); i++ )
-        {
             MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
-            System.out.println(" Контур: " + i + " Площа: " + Imgproc.contourArea(contours.get(i)) + " Довжина: " + Imgproc.arcLength(contour2f, true) + "\n");
-            //System.out.print(" Контур: " + i + " Площа: " + Imgproc.contourArea(contours.get(i)) + " Довжина: " + Imgproc.arcLength(contour2f, true) + "\n");
+
+            double circularity = 4*Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
+                    * Imgproc.arcLength(contour2f, true);
+
+            System.out.println(" Контур: " + i + " Площа: " + Imgproc.contourArea(contours.get(i)) + " Периметр: "
+                    + Imgproc.arcLength(contour2f, true) + " X: " + rect.x + " Y: " + rect.y
+                    + " height: " + rect.height + " width: " + rect.width + " Окружність: " + circularity);
 
             //objectsDs.add(new ObjectsD(i,Imgproc.contourArea(contours.get(i)), Imgproc.arcLength(contour2f, true) ));
-
             //Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-            Imgproc.drawContours(drawing, contours, i, new Scalar(0, 0, 255), 2, 1, hierarchy, 0, new Point());
+            Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
             Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
+
         }
 
         //this.saveObjParamValueXMLfile.setDisable(false);
@@ -447,9 +490,9 @@ public class StartController {
 
     private void setOriginalImage(Mat dst ){
         this.originalImage.setImage(ImageOperations.mat2Image(dst));
-        this.originalImage.setFitWidth(450.0);
-        this.originalImage.setFitHeight(450.0);
-        this.originalImage.setPreserveRatio(true);
+        this.originalImage.setFitWidth(650.0);
+        this.originalImage.setFitHeight(650.0);
+        //this.originalImage.setPreserveRatio(true);
     }
 
 
@@ -487,6 +530,20 @@ public class StartController {
             alert.showAndWait();
             //return false;
         }
+    }
+
+    protected Mat optimizeImageDim(Mat image) {
+        // init
+        Mat padded = new Mat();
+        // get the optimal rows size for dft
+        int addPixelRows = Core.getOptimalDFTSize(image.rows());
+        // get the optimal cols size for dft
+        int addPixelCols = Core.getOptimalDFTSize(image.cols());
+        // apply the optimal cols and rows size to the image
+        Imgproc.copyMakeBorder(image, padded, 0, addPixelRows - image.rows(), 0, addPixelCols - image.cols(),
+                Imgproc.BORDER_CONSTANT, Scalar.all(0));
+
+        return padded;
     }
 
     @FXML
@@ -947,7 +1004,7 @@ public class StartController {
     @FXML
     private void handleDBConnect() {
 
-        //boolean okClicked = mainApp.showDbConnectDialog();
+        boolean okClicked = mainApp.showDbConnectDialog();
         if (okClicked) {
             mainApp.startProcessing();
             //showPersonDetails(selectedPerson);

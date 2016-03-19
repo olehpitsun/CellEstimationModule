@@ -17,6 +17,8 @@ public class DB {
     private static Connection con;
     private static Statement stmt;
     private static ResultSet rs;
+    private static Connection c;
+    private static String dbname;
 
     public static Connection connect(String host, String port, String dbname,  String user, String password)throws
             ClassNotFoundException,SQLException
@@ -33,5 +35,20 @@ public class DB {
         // Now try to connect
         Connection c = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + dbname,p);
         return c;
+    }
+
+    public static void setConn(Connection c1){
+        c = c1;
+    }
+    public static Connection getConn(){
+        return c;
+    }
+
+    public static void setDBName(String dbn){
+        dbname = dbn;
+    }
+
+    public static String getDbname(){
+        return dbname;
     }
 }
