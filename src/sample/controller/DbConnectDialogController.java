@@ -63,9 +63,9 @@ public class DbConnectDialogController {
     public void setConnectField() {
         hostField.setText("localhost");
         portField.setText("3306");
-        userField.setText("root");
-        passwordField.setText("");
-        dbnameField.setText("");
+        userField.setText("oleh");
+        passwordField.setText("oleh123");
+        dbnameField.setText("cell");
     }
 
     /**

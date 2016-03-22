@@ -22,6 +22,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import sample.Main;
 import sample.model.Filters.FilterColection;
+import sample.model.Nuclei;
 import sample.model.ResearchParam;
 import sample.tools.ImageOperations;
 import sample.core.DB;
@@ -40,6 +41,8 @@ import java.util.List;
 import java.util.Vector;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.ThreadFactory;
+
 import sample.model.Filters.FiltersOperations;
 import sample.model.HistogramEQ;
 import sample.model.PreProcessing.PreProcessingOperation;
@@ -98,6 +101,13 @@ public class StartController {
     private ObservableList<FilterColection> comboBoxData = FXCollections.observableArrayList();
 
 
+    @FXML
+    private TableView<Nuclei> nucleiTable;
+    @FXML
+    private TableColumn<Nuclei, String > contourNumColumn;
+    @FXML
+    private TableColumn<Nuclei, String> contourAreaColumn;
+
     private boolean okClicked = false;
 
     private String filterType;
@@ -140,7 +150,11 @@ public class StartController {
 
         comboBoxData.add(new FilterColection("0", "Новий клас"));
 
+        //personData.add(new Person("Hans", "Muster"));
+
+
     }
+
 
     /**
      * Is called by the main application to give a reference back to itself.
@@ -150,6 +164,8 @@ public class StartController {
     public void setMainApp(Main mainApp) {
 
         this.mainApp = mainApp;
+        nucleiTable.setItems(mainApp.getNucleiData());
+
     }
 
     /**
@@ -166,18 +182,34 @@ public class StartController {
 
 
 
+        contourNumColumn.setCellValueFactory(cellData -> cellData.getValue().contourNumProperty());
+        contourAreaColumn.setCellValueFactory(cellData -> cellData.getValue().contourAreaProperty());
+
         comboBox.setItems(comboBoxData);
 
     }
 
     @FXML
     private void nextImSetting(){
-        try {
-            this.showNucleiClasses();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+        Connection c_test = DB.getConn();
+        if(c_test != null ) {
+            try {
+               // c_test.close();// nothing to do. Only for connection test
+                this.showNucleiClasses();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+
+        }else{
+            Alert alert = new Alert(AlertType.ERROR);
+            alert.initOwner(dialogStage);
+            alert.setTitle("Помилка");
+            alert.setHeaderText("Виникла помилка");
+            alert.setContentText("Підключіться до БД");
+
+            alert.showAndWait();
         }
     }
 
@@ -242,9 +274,10 @@ public class StartController {
        // ResearchParam.setResearch_id(Integer.parseInt(selectedFilter.getId()));
 
 
+
         //researchPathLabel.setVisible(true);
-        researchPathField.setVisible(true);
-        researchPathButton.setVisible(true);
+        //researchPathField.setVisible(true);
+        //researchPathButton.setVisible(true);
         //this.setResearchPath(this.researchname);
 
         loadImageButton.setVisible(true);
@@ -272,6 +305,27 @@ public class StartController {
         preparedStmt.setString  (2, imgN);
 
         preparedStmt.executeUpdate();
+
+
+
+
+
+        ResultSet rs_1 = null;
+        Statement stmt_1 = (Statement) c.createStatement();
+        String query_1 = "select MAX(id) from images";
+        try {
+            rs_1 = (ResultSet) stmt_1.executeQuery(query_1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        while (rs_1.next()) {
+            int img_id = rs_1.getInt(1);
+            ResearchParam.setImg_id(img_id);
+
+            System.out.printf("img_id: "+img_id);
+        }
+
     }
 
 
@@ -372,15 +426,6 @@ public class StartController {
         File file = chooser.showOpenDialog(new Stage());
         if(file != null) {
 
-            //this.averageColor(file);
-            /** return RGB values, average bright**/
-            //StartImageParams.getStartValues(file);
-
-            //HistogramEQ.atart(file.getAbsolutePath());
-
-            //this.showHisImage(file.getAbsolutePath());
-
-
             this.image = Highgui.imread(file.getAbsolutePath(), Highgui.CV_LOAD_IMAGE_COLOR);
 
             sample.model.Image.setImageMat(this.image);
@@ -395,8 +440,14 @@ public class StartController {
             // show the image
             this.setOriginalImage(newImage);
 
+
             // call to object detection function
-            this.SimpleDetect();
+            try {
+                this.SimpleDetect();
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+            }
 
         }
         else
@@ -536,7 +587,7 @@ public class StartController {
 
 
     @FXML
-    public void SimpleDetect(){
+    public void SimpleDetect() throws SQLException {
 
         Mat src = this.image;
         Mat src_gray = new Mat();
@@ -589,6 +640,29 @@ public class StartController {
             Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
             Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
 
+            ResultSet rs = null;
+            Connection c = DB.getConn();
+            Statement stmt = (Statement) c.createStatement();
+
+            String query = "INSERT INTO nuclei_params (image_id, contour_num, contour_area, contour_perimetr," +
+                    " contour_height,contour_width, contour_circularity  ) VALUES (?,?,?,?,?,?,?)";
+            PreparedStatement preparedStmt = null;
+
+            preparedStmt = (PreparedStatement) c.prepareStatement(query);
+
+            preparedStmt.setInt  (1, ResearchParam.getImg_id());
+            preparedStmt.setInt  (2, i);
+            preparedStmt.setDouble(3,Imgproc.contourArea(contours.get(i)));
+            preparedStmt.setDouble(4, Imgproc.arcLength(contour2f, true));
+            preparedStmt.setDouble(5, rect.height);
+            preparedStmt.setDouble(6, rect.y);
+            preparedStmt.setDouble(7, circularity);
+
+
+
+            preparedStmt.executeUpdate();
+
+            mainApp.showNucleiParamOverview("2", "Oleh");
         }
 
         //this.saveObjParamValueXMLfile.setDisable(false);
@@ -664,11 +738,7 @@ public class StartController {
             prparam.setResearchName(researchNameField.getText());
         }
 
-        if (researchPathField.getText() == null || researchPathField.getText().length() == 0) {
-            errorMessage += "Заповніть коректно шлях до теки!\n";
-        }else{
-            prparam.setResearchPath(researchPathField.getText());
-        }
+
         // called main function for image processing
 
         if (errorMessage.length() != 0) {
