@@ -141,7 +141,10 @@ public class StartController {
     @FXML
     private Label psnrResLabel;
 
-
+    private ObservableList<Nuclei> nucleiData = FXCollections.observableArrayList();
+    public ObservableList<Nuclei> getNucleiData() {
+        return nucleiData;
+    }
     /**
      * The constructor.
      * The constructor is called before the initialize() method.
@@ -164,9 +167,10 @@ public class StartController {
     public void setMainApp(Main mainApp) {
 
         this.mainApp = mainApp;
-        nucleiTable.setItems(mainApp.getNucleiData());
+       // nucleiTable.setItems(mainApp.getNucleiData());
 
     }
+
 
     /**
      * Initializes the controller class. This method is automatically called
@@ -194,7 +198,7 @@ public class StartController {
         Connection c_test = DB.getConn();
         if(c_test != null ) {
             try {
-               // c_test.close();// nothing to do. Only for connection test
+                // c_test.close();// nothing to do. Only for connection test
                 this.showNucleiClasses();
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -271,7 +275,7 @@ public class StartController {
         this.insertResearchNameToDb(this.researchname);
 
 
-       // ResearchParam.setResearch_id(Integer.parseInt(selectedFilter.getId()));
+        // ResearchParam.setResearch_id(Integer.parseInt(selectedFilter.getId()));
 
 
 
@@ -294,7 +298,7 @@ public class StartController {
         ResultSet rs = null;
         Connection c = DB.getConn();
 
-            Statement stmt = (Statement) c.createStatement();
+        Statement stmt = (Statement) c.createStatement();
 
         String query = "INSERT INTO images (research_id, image_name) VALUES (?,?)";
         PreparedStatement preparedStmt = null;
@@ -662,8 +666,11 @@ public class StartController {
 
             preparedStmt.executeUpdate();
 
-            mainApp.showNucleiParamOverview("2", "Oleh");
+            //mainApp.showNucleiParamOverview("2", "Oleh");
+            nucleiData.add(new Nuclei("2","olko",12,13,14,15));
+
         }
+        nucleiTable.setItems(getNucleiData());
 
         //this.saveObjParamValueXMLfile.setDisable(false);
         //this.saveXMLfile.setDisable(true);
@@ -1097,8 +1104,8 @@ public class StartController {
     private void compareImages(){
         //System.out.println(originalImagePath);
         //System.out.println(generatedImagePath);
-       // this.meanSquaredError = Psnr.getmeanSquaredError(originalImagePath, generatedImagePath);
-       // this.psnr = Psnr.getPsnr(this.meanSquaredError);
+        // this.meanSquaredError = Psnr.getmeanSquaredError(originalImagePath, generatedImagePath);
+        // this.psnr = Psnr.getPsnr(this.meanSquaredError);
 
         mseResLabel.setText(String.valueOf(this.meanSquaredError));
         psnrResLabel.setText(String.valueOf(this.psnr));
@@ -1175,7 +1182,7 @@ public class StartController {
 
         // properation.getOutputImage().release();
 
-       // this.setSegmentationImage(segoperation_1.getOutputImage());
+        // this.setSegmentationImage(segoperation_1.getOutputImage());
 
         segoperation_1.getOutputImage().release();
     }
