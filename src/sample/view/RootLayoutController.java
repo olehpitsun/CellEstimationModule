@@ -60,11 +60,6 @@ public class RootLayoutController {
             this.image = Highgui.imread(file.getAbsolutePath(), Highgui.CV_LOAD_IMAGE_COLOR);
 
             sample.model.Image.setImageMat(this.image);
-
-
-
-
-
         }
         else
         {
@@ -74,6 +69,12 @@ public class RootLayoutController {
         /*alert.setContentText("You didn't select a file!");*/
             alert.showAndWait();
         }
+    }
+
+    @FXML
+    public void handleReport(){
+
+        mainApp.showReport();
     }
 
     @FXML

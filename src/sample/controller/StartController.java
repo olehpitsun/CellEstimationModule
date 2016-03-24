@@ -57,7 +57,7 @@ public class StartController {
     @FXML
     private TableView<Nuclei> nucleiTable;
     @FXML
-    private TableColumn<Nuclei, Integer > contourNumColumn;
+    private TableColumn<Nuclei, Integer> contourNumColumn;
     @FXML
     private TableColumn<Nuclei, Double> contourAreaColumn;
     @FXML
@@ -311,7 +311,6 @@ public class StartController {
 
         ResultSet rs = null;
         //Connection c = DB.connect("127.0.0.1","3306","ams","root","oleh123");
-
         Connection c = DB.getConn();
         Statement stmt = (Statement) c.createStatement();
 

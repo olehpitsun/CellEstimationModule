@@ -19,7 +19,14 @@
 
                </items>
           </Menu>
+            <Menu mnemonicParsing="false" text="Звіт">
+                <items>
+                    <MenuItem mnemonicParsing="false" onAction="#handleReport" text="Звіт"/>
 
+
+
+                </items>
+            </Menu>
 
         </menus>
       </MenuBar>
