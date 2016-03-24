@@ -7,8 +7,8 @@ import javafx.beans.property.*;
  */
 public class Nuclei {
 
-    private final StringProperty contourNum;
-    private final StringProperty contourArea;
+    private final IntegerProperty contourNum;
+    private final DoubleProperty contourArea;
     private final DoubleProperty contourPerimetr;
     private final DoubleProperty contourHeight;
     private final DoubleProperty contourWidth;
@@ -17,11 +17,11 @@ public class Nuclei {
 
 
 
-    public Nuclei(String contourNum, String contourArea, int contourPerimetr, int contourHeight,
-                  int contourWidth, int contourCircularity){
+    public Nuclei(int contourNum, double contourArea, double contourPerimetr, double contourHeight,
+                  double contourWidth, double contourCircularity){
 
-        this.contourNum = new SimpleStringProperty(contourNum);
-        this.contourArea = new SimpleStringProperty(contourArea);
+        this.contourNum = new SimpleIntegerProperty(contourNum);
+        this.contourArea = new SimpleDoubleProperty(contourArea);
         this.contourPerimetr = new SimpleDoubleProperty(contourPerimetr);
         this.contourHeight = new SimpleDoubleProperty(contourHeight);
         this.contourWidth = new SimpleDoubleProperty(contourWidth);
@@ -29,27 +29,27 @@ public class Nuclei {
     }
 
 
-    public void setContourNum(String contourNum){
+    public void setContourNum(Integer contourNum){
         this.contourNum.set(contourNum);
     }
 
-    public String getContourNum(){
+    public Integer getContourNum(){
         return contourNum.get();
     }
 
-    public StringProperty contourNumProperty() {
+    public IntegerProperty contourNumProperty() {
         return contourNum;
     }
 
-    public void setContourArea(String contourArea){
+    public void setContourArea(Double contourArea){
         this.contourArea.set(contourArea);
     }
 
-    public String getContourArea(){
+    public Double getContourArea(){
         return contourArea.get();
     }
 
-    public StringProperty contourAreaProperty() {
+    public DoubleProperty contourAreaProperty() {
         return contourArea;
     }
 

@@ -43,13 +43,13 @@
     -fx-border-color: 
         transparent
         transparent
-        derive(-fx-base, 80%) 
+        derive(-fx-base, 40%)
         transparent;
     -fx-border-insets: 0 10 1 0;
 }
 
 .table-view .column-header .label {
-    -fx-font-size: 20pt;
+    -fx-font-size: 10pt;
     -fx-font-family: "Segoe UI Light";
     -fx-text-fill: white;
     -fx-alignment: center-left;

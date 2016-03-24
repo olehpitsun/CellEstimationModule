@@ -82,7 +82,7 @@ public class Main extends Application {
             // Give the controller access to the main app.
             StartController controller = loader.getController();
             controller.setMainApp(this);
-            nucleiData.add(new Nuclei("1","11",12,13,14,15));
+            //nucleiData.add(new Nuclei("1","11",12,13,14,15));
 
 
         } catch (IOException e) {
@@ -90,25 +90,7 @@ public class Main extends Application {
         }
     }
 
-    public void showNucleiParamOverview(String contourNum, String contorArea) {
-        try {
-            // Load person overview.
-            FXMLLoader loader = new FXMLLoader();
-            loader.setLocation(Main.class.getResource("view/Start.fxml"));
-            AnchorPane PreProcessing = (AnchorPane) loader.load();
 
-            // Set person overview into the center of root layout.
-            rootLayout.setCenter(PreProcessing);
-
-            // Give the controller access to the main app.
-            StartController controller = loader.getController();
-            controller.setMainApp(this);
-            nucleiData.add(new Nuclei(contourNum,contorArea,12,13,14,15));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
     public boolean showDbConnectDialog() {
         try {
             // Load the fxml file and create a new stage for the popup dialog.
