@@ -6,6 +6,7 @@ package sample.model;
 public class ResearchParam {
 
     public static Integer research_id;
+    public static String research_name;
     public static String img_name;
     public static Integer img_id;
 
@@ -15,6 +16,13 @@ public class ResearchParam {
 
     public static Integer getResearch_id(){
         return research_id;
+    }
+
+    public static void setResearch_name(String res_name){
+        research_name =res_name;
+    }
+    public static String getResearch_name(){
+        return research_name;
     }
 
     public static void setImg_name(String path){

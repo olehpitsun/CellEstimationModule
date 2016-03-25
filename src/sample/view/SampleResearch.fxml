@@ -79,6 +79,19 @@
 
                         </children>
                 </AnchorPane>
+                <AnchorPane minHeight="0.0" minWidth="525.0" prefHeight="362.0" prefWidth="530.0" styleClass="background" SplitPane.resizableWithParent="false">
+                <children>
+                    <Label layoutX="104.0" layoutY="51.0" styleClass="label" text="Експорт arff" AnchorPane.leftAnchor="5.0" AnchorPane.topAnchor="5.0" />
+
+
+                    <GridPane  prefHeight="216.0" prefWidth="97.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="49.0" AnchorPane.topAnchor="26.0">
+
+                        <Button fx:id="generateFileButton" defaultButton="true" mnemonicParsing="false" onAction="#generateFile" text="Клас" visible="false" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+
+                    </GridPane>
+
+                </children>
+                </AnchorPane>
             </items>
         </SplitPane>
     </children>
