@@ -211,17 +211,62 @@ public class StartController {
         Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
         Rect rect ;
 
+
+
         for( int i = 0; i< contours.size(); i++ )
         {
             rect = Imgproc.boundingRect(contours.get(i));
             mu.add(i, Imgproc.moments(contours.get(i), false));
             mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
 
+
+            MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
+
+
+            /////////////////////////////////////////////////////////////////////////////////////////////////////
             Moments p = mu.get(i);
             int x = (int) (p.get_m10() / p.get_m00());
             int y = (int) (p.get_m01() / p.get_m00());
 
-            MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
+            double a = (p.get_m20()/p.get_m00()) - x*x;
+            double b = 2*((p.get_m11()/p.get_m00()) - x*y);
+            double c_1 = (p.get_m02()/p.get_m00()) - y*y;
+
+            //System.out.println( "a "+ a);
+            //System.out.println( "b "+ b);
+            //System.out.println( "c "+ c_1);
+
+            double l = Math.sqrt((a+c_1)+ Math.sqrt(b*b + Math.pow((a-c_1),2)))/2;
+            //System.out.println( "l "+ l);
+
+            double w = Math.sqrt((a+c_1)- Math.sqrt(b*b + Math.pow((a-c_1),2)))/2;
+            //System.out.println( "w "+ w);
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            MatOfPoint2f mMOP2f1 = new MatOfPoint2f();
+            contours.get(i).convertTo(mMOP2f1, CvType.CV_32FC2);
+            RotatedRect e = Imgproc.fitEllipse(mMOP2f1);
+
+            double xc    = e.center.x;
+            double yc    = e.center.y;
+            double g     = e.size.width  / 2;    // width >= height
+            double h     = e.size.height / 2;
+            double theta = e.angle;
+
+            System.out.println( "xc "+ xc);
+            System.out.println( "yc "+ yc);
+            System.out.println( "g "+ g);
+            System.out.println( "h "+ h);
+            System.out.println( "theta "+ theta);
+
+            //Imgproc.convexHull(contours.get(i), hull);
+            //MatOfPoint hullContour = hull2Points(hull, contours.get(i));
+
+            //getConvexHull(contours.get(i));
+
+            //Rect box = Imgproc.boundingRect(hullContour);
+            //hullMat = new Mat(drawing, box);
 
             double circularity = 4*Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
                     * Imgproc.arcLength(contour2f, true);
@@ -234,6 +279,14 @@ public class StartController {
             //Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
             Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
             Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
+
+
+
+
+
+
+
+
 
             ResultSet rs = null;
             Connection c = DB.getConn();
@@ -264,6 +317,43 @@ public class StartController {
         }
         nucleiTable.setItems(getNucleiData());
         this.setOriginalImage(drawing);
+    }
+
+    public void getConvexHull(MatOfPoint pointMat){
+        MatOfInt hull = new MatOfInt();
+        MatOfPoint points = new MatOfPoint(pointMat);
+
+
+        Imgproc.convexHull(points, hull);
+        Point[] hp = new Point[hull.height()];
+
+        for(int i = 0; i < hull.height(); i++){
+            int index = (int)hull.get(i,0)[0];
+            hp[i] = new Point(pointMat.get(index,0));
+        }
+        MatOfPoint hullPoints = new MatOfPoint();
+
+        //Mat d = new Mat();
+        //hullPoints.setTo(d);
+        hullPoints.fromArray(hp);
+
+        //System.out.println("Hullpoint " + Imgproc.contourArea(hullPoints));
+        System.out.println("Hullpoint " + Imgproc.contourArea(hullPoints) );
+
+
+        //System.out.println("Convex " + Imgproc.are);
+        //return new Contour(parent, hullPoints);
+    }
+
+    MatOfPoint hull2Points(MatOfInt hull, MatOfPoint contour) {
+        List<Integer> indexes = hull.toList();
+        List<Point> points = new ArrayList<>();
+        MatOfPoint point= new MatOfPoint();
+        for(Integer index:indexes) {
+            points.add(contour.toList().get(index));
+        }
+        point.fromList(points);
+        return point;
     }
 
     @FXML
