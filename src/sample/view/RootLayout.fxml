@@ -9,12 +9,6 @@
           <Menu mnemonicParsing="false" text="Головна">
                <items>
                    <MenuItem mnemonicParsing="false" onAction="#handleStart" text="Головна"/>
-
-                   <MenuItem mnemonicParsing="false" onAction="#SaveImage" text="Зберегти як">
-                     <accelerator>
-                     </accelerator>
-                  </MenuItem>
-
                   <MenuItem mnemonicParsing="false" onAction="#handleExit" text="Вихід" />
 
                </items>
@@ -22,9 +16,6 @@
             <Menu mnemonicParsing="false" text="Звіт">
                 <items>
                     <MenuItem mnemonicParsing="false" onAction="#handleReport" text="Звіт"/>
-
-
-
                 </items>
             </Menu>
 

@@ -50,7 +50,7 @@
                                     </items>
                                 </ComboBox>
 
-                                <ComboBox fx:id="comboBoxImages" layoutX="30.0" onAction="#handleClassesAction" visible="false" GridPane.columnIndex="0" GridPane.rowIndex="2">
+                                <ComboBox fx:id="comboBoxImages" layoutX="30.0" onAction="#handleAddImagesAction" visible="false" GridPane.columnIndex="0" GridPane.rowIndex="2">
                                     <items>
                                         <FXCollections fx:factory="observableArrayList">
                                             <String fx:value="Item 1" />
@@ -61,6 +61,9 @@
                                 </ComboBox>
                             </children>
                         </GridPane>
+
+                        <Label fx:id="researchSettingInfoLabel" layoutX="14.0" layoutY="451.0" styleClass="label" text="" visible="true"/>
+
                     </children>
                 </AnchorPane>
                 <AnchorPane minHeight="0.0" minWidth="525.0" prefHeight="362.0" prefWidth="530.0" styleClass="background" SplitPane.resizableWithParent="false">
@@ -113,7 +116,7 @@
                     <GridPane prefHeight="216.0" prefWidth="97.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="49.0" AnchorPane.topAnchor="26.0">
    <children>
    
-                           <Button fx:id="generateFileButton" defaultButton="true" mnemonicParsing="false" onAction="#generateFile" text="Клас" visible="false" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                           <Button fx:id="generateFileButton" defaultButton="true" mnemonicParsing="false" onAction="#generateFile" text="Експорт в arff" visible="false" GridPane.columnIndex="0" GridPane.rowIndex="0" />
    </children>
                      <columnConstraints>
                         <ColumnConstraints />

@@ -28,7 +28,7 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
-        this.primaryStage.setTitle("Тестування біо зображень");
+        this.primaryStage.setTitle("Аналіз біо зображень");
 
         // Set the application icon.
         this.primaryStage.getIcons().add(new Image("file:resources/images/address_book_32.png"));

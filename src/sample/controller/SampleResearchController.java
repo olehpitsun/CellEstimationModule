@@ -5,10 +5,7 @@ import com.mysql.jdbc.Statement;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
 import org.opencv.core.*;
 import sample.Main;
@@ -25,12 +22,11 @@ import java.util.ArrayList;
 import java.io.*;
 import java.util.Date;
 
-
 public class SampleResearchController {
 
     private Stage stage;
-    protected Mat image;
-    protected Main mainApp;
+    private Mat image;
+    private Main mainApp;
     private Stage dialogStage;
 
     @FXML
@@ -39,12 +35,15 @@ public class SampleResearchController {
     private ComboBox<ImagesColection> comboBoxImages;
     @FXML
     private CheckBox contour_area, contour_perimetr, contour_height, contour_width, contour_circularity,
-            xc, yc, major_axis, minor_axis, theta, equiDiameter ;
+            xc, yc, major_axis, minor_axis, theta, equiDiameter;
+    @FXML
+    private Label researchSettingInfoLabel;
     @FXML
     private Button generateFileButton;
     private ObservableList<ClassesColection> comboBoxClassesData = FXCollections.observableArrayList();
     private ObservableList<ImagesColection> comboBoxImagesData = FXCollections.observableArrayList();
-    public ArrayList selectedNucleiParam = new ArrayList();
+    private ArrayList selectedNucleiParam = new ArrayList();
+    private ArrayList selectedImagesId = new ArrayList();
 
     /**
      * The constructor.
@@ -93,11 +92,8 @@ public class SampleResearchController {
         comboBoxClasses.setVisible(true);
         ResultSet rs = null;
         Connection c = DB.getConn();
-
         Statement stmt = (Statement) c.createStatement();
-
         String table = "research_name";
-        String par ="1";
         String query = "select id, name from " + table ;
         try {
             rs = (ResultSet) stmt.executeQuery(query);
@@ -114,24 +110,18 @@ public class SampleResearchController {
         comboBoxClasses.setItems(comboBoxClassesData);
     }
 
-    public void handleImagesAction() throws SQLException {
+    public void handleImagesAction() throws SQLException, NullPointerException {
 
         generateFileButton.setVisible(true);
         comboBoxImages.setVisible(true);
-        comboBoxImagesData.clear();// очистка comboBoxImagesData , щоб не впливало на наступні досліди
+        researchSettingInfoLabel.setText("Вибрано усі зображення цього досліду");
 
         ClassesColection selectedClass = comboBoxClasses.getSelectionModel().getSelectedItem();
-
         ResearchParam.setResearch_name(selectedClass.getId());
-
         ResultSet rs = null;
         Connection c = DB.getConn();
-
-        System.out.println("                                              d "+selectedClass.getId() );
         Statement stmt = (Statement) c.createStatement();
-
         String table = "images";
-        String par ="1";
         String query = "select id, research_id, image_name from " + table + "  where research_id = " + selectedClass.getId();
         try {
             rs = (ResultSet) stmt.executeQuery(query);
@@ -143,12 +133,9 @@ public class SampleResearchController {
             int classId = rs.getInt(2);
             String name = rs.getString(3);
             comboBoxImagesData.add(new ImagesColection(Integer.toString(id), Integer.toString(classId), name));
-
-            System.out.println(id +  classId + name);
         }
         comboBoxImages.setItems(comboBoxImagesData);
     }
-
 
     /**
      * занесення вибраних параметрів для ядер
@@ -191,20 +178,15 @@ public class SampleResearchController {
         if(equiDiameter.isSelected()){
             selectedNucleiParam.add(equiDiameter.getId());
         }
-        System.out.println("////////////////////////////////////////////");
-        for(int i =0;i<selectedNucleiParam.size();i++){
-            System.out.println(selectedNucleiParam.get(i));
-        }
     }
 
-    public void generateFile() throws IOException, SQLException {
+    public void generateFile() throws IOException, SQLException, NullPointerException {
 
         /**
          * якщо немає підключення до БД
          * та не вибрано класу
          * генерація файлу не відбуватиметься
          */
-
         if(selectedNucleiParam.size() == 0){
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.initOwner(dialogStage);
@@ -250,12 +232,12 @@ public class SampleResearchController {
         }
 
         String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-        File fout = new File(FileParam.getFilename() + "_" + timeStamp + ".txt");// назва файлу
+        File fout = new File(FileParam.getFilename() + "_" + timeStamp + ".arff");// назва файлу
         FileOutputStream fos = new FileOutputStream(fout);
         BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
 
         /** встановлення назви відношення */
-        bw.write("@relation shuttle " + FileParam.getFilename());
+        bw.write("@relation " + FileParam.getFilename());
         bw.newLine();
 
         for (int i = 0; i < selectedNucleiParam.size(); i++) {
@@ -266,14 +248,29 @@ public class SampleResearchController {
         bw.write("@data");
         bw.newLine();
 
-        for(int i=0; i<comboBoxImagesData.size(); i++ ){
-            /**
-             * вибірка параметрів ядер для кожного зображення із comboBoxImagesData
-             */
-        System.out.println(comboBoxImagesData.get(i).getId());
-            showNucleiParam(bw, comboBoxImagesData.get(i).getId() );
+        /*** вибірка параметрів ядер для кожного зображення із comboBoxImagesData*/
+        if(selectedImagesId.size() > 0 ){
+            for(int i=0; i<selectedImagesId.size(); i++ ){
+                System.out.println(selectedImagesId.get(i).toString());
+                showNucleiParam(bw, selectedImagesId.get(i).toString() );
+            }
+        }else{
+            for(int i=0; i<comboBoxImagesData.size(); i++ ){
+                showNucleiParam(bw, comboBoxImagesData.get(i).getId() );
+            }
         }
+
         bw.close();
+
+        comboBoxImagesData.clear();// очистка comboBoxImagesData , щоб не впливало на наступні досліди
+        selectedImagesId.clear();/** очищаємо список ід вибраних зображень на попередньому кроці**/
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Повідомлення");
+        alert.setHeaderText("Файл " + timeStamp + ".arff створено" );
+        alert.showAndWait();
+
+        mainApp.showReport();
     }
 
     /**
@@ -342,7 +339,6 @@ public class SampleResearchController {
                 str+=selectedNucleiParam.get(i);
             }
         }
-        System.out.println(str);
         return str;
     }
 
@@ -352,7 +348,7 @@ public class SampleResearchController {
      * @return
      * @throws SQLException
      */
-    public String getImageName(Integer img_id) throws SQLException {
+    public String getImageName(Integer img_id) throws SQLException, NullPointerException {
 
         String img_name ="";
         ResultSet rs = null;
@@ -370,6 +366,16 @@ public class SampleResearchController {
         return img_name;
     }
 
+    /**
+     * Обробник додавання конкретних id
+     * зображень для подальшої обробки
+     */
+    public void handleAddImagesAction(){
+
+        ImagesColection selectedImage = comboBoxImages.getSelectionModel().getSelectedItem();
+        selectedImagesId.add(selectedImage.getId());
+        researchSettingInfoLabel.setText("Вибрано зображення " + selectedImage.getImageName());
+    }
 }
 
 
