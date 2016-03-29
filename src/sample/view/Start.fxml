@@ -76,6 +76,13 @@
                                 <TableColumn fx:id="contourHeightColumn" prefWidth="55.0" text="Висота" />
                                 <TableColumn fx:id="contourWidthColumn" prefWidth="55.0" text="Ширина" />
                                 <TableColumn fx:id="contourCircularityColumn" prefWidth="55.0" text="Округлість" />
+                                <TableColumn fx:id="contourXcColumn" prefWidth="55.0" text="Xc" />
+                                <TableColumn fx:id="contourYcColumn" prefWidth="55.0" text="Yc" />
+                                <TableColumn fx:id="contourMajor_axisColumn" prefWidth="55.0" text="major" />
+                                <TableColumn fx:id="contourMinor_axisColumn" prefWidth="55.0" text="minot" />
+                                <TableColumn fx:id="contourThetaColumn" prefWidth="55.0" text="Angle" />
+                                <TableColumn fx:id="contourquiDiameterColumn" prefWidth="55.0" text="Екв. діаметр" />
+
                             </columns>
                             <columnResizePolicy>
                                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

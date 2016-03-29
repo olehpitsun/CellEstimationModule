@@ -38,16 +38,8 @@ public class SampleResearchController {
     @FXML
     private ComboBox<ImagesColection> comboBoxImages;
     @FXML
-    private CheckBox contour_area;
-    @FXML
-    private CheckBox contour_perimetr;
-    @FXML
-    private CheckBox contour_height;
-    @FXML
-    private CheckBox contour_width;
-    @FXML
-    private CheckBox contour_circularity;
-
+    private CheckBox contour_area, contour_perimetr, contour_height, contour_width, contour_circularity,
+            xc, yc, major_axis, minor_axis, theta, equiDiameter ;
     @FXML
     private Button generateFileButton;
     private ObservableList<ClassesColection> comboBoxClassesData = FXCollections.observableArrayList();
@@ -82,6 +74,14 @@ public class SampleResearchController {
         contour_height.setSelected(true);
         contour_width.setSelected(true);
         contour_circularity.setSelected(true);
+        xc.setSelected(true);
+        yc.setSelected(true);
+        major_axis.setSelected(true);
+        minor_axis.setSelected(true);
+        theta.setSelected(true);
+        equiDiameter.setSelected(true);
+
+        handleCheckBoxAction();
     }
 
     public void setStage(Stage stage) {
@@ -156,6 +156,8 @@ public class SampleResearchController {
     @FXML
     private void handleCheckBoxAction() {
 
+        selectedNucleiParam.clear();
+
         if(contour_area.isSelected()){
             selectedNucleiParam.add(contour_area.getId());
         }
@@ -171,7 +173,24 @@ public class SampleResearchController {
         if(contour_circularity.isSelected()){
             selectedNucleiParam.add(contour_circularity.getId());
         }
-
+        if(xc.isSelected()){
+            selectedNucleiParam.add(xc.getId());
+        }
+        if(yc.isSelected()){
+            selectedNucleiParam.add(yc.getId());
+        }
+        if(major_axis.isSelected()){
+            selectedNucleiParam.add(major_axis.getId());
+        }
+        if(minor_axis.isSelected()){
+            selectedNucleiParam.add(minor_axis.getId());
+        }
+        if(theta.isSelected()){
+            selectedNucleiParam.add(theta.getId());
+        }
+        if(equiDiameter.isSelected()){
+            selectedNucleiParam.add(equiDiameter.getId());
+        }
         System.out.println("////////////////////////////////////////////");
         for(int i =0;i<selectedNucleiParam.size();i++){
             System.out.println(selectedNucleiParam.get(i));
@@ -230,8 +249,6 @@ public class SampleResearchController {
             System.out.println("Oleh " + filename);
         }
 
-
-
         String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
         File fout = new File(FileParam.getFilename() + "_" + timeStamp + ".txt");// назва файлу
         FileOutputStream fos = new FileOutputStream(fout);
@@ -275,25 +292,47 @@ public class SampleResearchController {
         Connection c = DB.getConn();
         Statement stmt = (Statement) c.createStatement();
         String table = "nuclei_params";
-        String query = "select contour_num, " + ncp + " from " + table + "  where image_id = " + image_id;
+        String query = "select image_id, contour_num, " + ncp + " from " + table + "  where image_id = " + image_id;
         try {
             rs = (ResultSet) stmt.executeQuery(query);
         } catch (SQLException e) {
             e.printStackTrace();
         }
         while (rs.next()) {
-            Integer contour_num = rs.getInt(1);
-            Double contour_area = rs.getDouble(2);
-            Double contour_perimetr = rs.getDouble(3);
-            Double contour_height = rs.getDouble(4);
-            Double contour_width = rs.getDouble(5);
-            Double contour_circularity = rs.getDouble(6);
+            Integer img_id = rs.getInt(1);
+            Integer contour_num = rs.getInt(2);
+            /*
+            Double contour_area = rs.getDouble(3);
+            Double contour_perimetr = rs.getDouble(4);
+            Double contour_height = rs.getDouble(5);
+            Double contour_width = rs.getDouble(6);
+            Double contour_circularity = rs.getDouble(7);
+            Double xc = rs.getDouble(8);
+            Double yc = rs.getDouble(9);
+            Double major_axis = rs.getDouble(10);
+            Double minor_axis = rs.getDouble(11);
+            Double theta = rs.getDouble(12);
+            Double equiDiameter = rs.getDouble(13);*/
 
-            bw.write(contour_num + " " + contour_area + " " + contour_perimetr + " " + contour_height + " " + contour_width + " " + contour_circularity);
+            String image_name = getImageName(img_id);
+            bw.write(image_name + " " + contour_num + " " );
+
+            for(int i =3; i <= selectedNucleiParam.size()+2; i++){
+                Double tempvalue = rs.getDouble(i);
+                bw.write(tempvalue + " ");
+            }
+            bw.newLine();
+
+           /* bw.write(image_name + " " + contour_num + " " + contour_area + " " + contour_perimetr + " " + contour_height + " " + contour_width + " " + contour_circularity +
+                    xc + " " + yc + " " + major_axis + " " + minor_axis + " " + theta + " " + equiDiameter);*/
             bw.newLine();
         }
     }
 
+    /**
+     * функція генерує SQl стрічку запиту полів
+     * @return
+     */
     public String nucleiParamToString(){
         String str = "";
         for(int i = 0; i< selectedNucleiParam.size(); i++){
@@ -307,6 +346,29 @@ public class SampleResearchController {
         return str;
     }
 
+    /**
+     * функція повертає назву зображення по його id
+     * @param img_id
+     * @return
+     * @throws SQLException
+     */
+    public String getImageName(Integer img_id) throws SQLException {
+
+        String img_name ="";
+        ResultSet rs = null;
+        Connection c = DB.getConn();
+        Statement stmt = (Statement) c.createStatement();
+        String query = "select image_name from images where id = " + img_id;
+        try {
+            rs = (ResultSet) stmt.executeQuery(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        while (rs.next()) {
+            img_name = rs.getString(1);
+        }
+        return img_name;
+    }
 
 }
 

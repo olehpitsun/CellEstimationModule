@@ -13,12 +13,16 @@ public class Nuclei {
     private final DoubleProperty contourHeight;
     private final DoubleProperty contourWidth;
     private final DoubleProperty contourCircularity;
-
-
-
+    private final DoubleProperty contourXc;
+    private final DoubleProperty contourYc;
+    private final DoubleProperty contourMajor_axis;
+    private final DoubleProperty contourMinor_axis;
+    private final DoubleProperty contourTheta;
+    private final DoubleProperty contourEquiDiameter;
 
     public Nuclei(int contourNum, double contourArea, double contourPerimetr, double contourHeight,
-                  double contourWidth, double contourCircularity){
+                  double contourWidth, double contourCircularity, double contourXc, double contourYc,
+                  double contourMajor_axis, double contourMinor_axis, double contourTheta, double contourEquiDiameter){
 
         this.contourNum = new SimpleIntegerProperty(contourNum);
         this.contourArea = new SimpleDoubleProperty(contourArea);
@@ -26,6 +30,14 @@ public class Nuclei {
         this.contourHeight = new SimpleDoubleProperty(contourHeight);
         this.contourWidth = new SimpleDoubleProperty(contourWidth);
         this.contourCircularity = new SimpleDoubleProperty(contourCircularity);
+        this.contourXc = new SimpleDoubleProperty(contourXc);
+        this.contourYc = new SimpleDoubleProperty(contourYc);
+        this.contourMajor_axis = new SimpleDoubleProperty(contourMajor_axis);
+        this.contourMinor_axis = new SimpleDoubleProperty(contourMinor_axis);
+        this.contourTheta = new SimpleDoubleProperty(contourTheta);
+        this.contourEquiDiameter = new SimpleDoubleProperty(contourEquiDiameter);
+
+
     }
 
 
@@ -99,5 +111,64 @@ public class Nuclei {
         return contourCircularity;
     }
 
+    public void setContourXc(Double xc){
+        this.contourXc.set(xc);
+    }
+    public Double getContourXc(){
+        return contourXc.get();
+    }
+    public DoubleProperty contourXcProperty() {
+        return contourXc;
+    }
+
+    public void setContourYc(Double yc){
+        this.contourYc.set(yc);
+    }
+    public Double getContourYc(){
+        return contourYc.get();
+    }
+    public DoubleProperty contourYcProperty() {
+        return contourYc;
+    }
+
+    public void setContourMajor_axis(Double major_axis){
+        this.contourMajor_axis.set(major_axis);
+    }
+    public Double getContourMajor_axis(){
+        return contourMajor_axis.get();
+    }
+    public DoubleProperty contourMajor_axisProperty() {
+        return contourMajor_axis;
+    }
+
+    public void setContourMinor_axis(Double minor_axis){
+        this.contourMinor_axis.set(minor_axis);
+    }
+    public Double getContourMinor_axis(){
+        return contourMinor_axis.get();
+    }
+    public DoubleProperty contourMinor_axisProperty() {
+        return contourMinor_axis;
+    }
+
+    public void setContourTheta(Double theta){
+        this.contourTheta.set(theta);
+    }
+    public Double getContourTheta(){
+        return contourTheta.get();
+    }
+    public DoubleProperty contourThetaProperty() {
+        return contourTheta;
+    }
+
+    public void setContourEquiDiameter(Double equiDiameter){
+        this.contourEquiDiameter.set(equiDiameter);
+    }
+    public Double getContourEquiDiameter(){
+        return contourEquiDiameter.get();
+    }
+    public DoubleProperty contourEquiDiameterProperty() {
+        return contourEquiDiameter;
+    }
 
 }

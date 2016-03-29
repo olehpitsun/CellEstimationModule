@@ -35,6 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 import sample.util.PreProcessingParam;
 
+import static java.lang.Math.sqrt;
+
 public class StartController {
 
     @FXML
@@ -68,6 +70,19 @@ public class StartController {
     private TableColumn<Nuclei, Double> contourWidthColumn;
     @FXML
     private TableColumn<Nuclei, Double> contourCircularityColumn;
+    @FXML
+    private TableColumn<Nuclei, Double> contourXcColumn;
+    @FXML
+    private TableColumn<Nuclei, Double> contourYcColumn;
+    @FXML
+    private TableColumn<Nuclei, Double> contourMajor_axisColumn;
+    @FXML
+    private TableColumn<Nuclei, Double> contourMinor_axisColumn;
+    @FXML
+    private TableColumn<Nuclei, Double> contourThetaColumn;
+    @FXML
+    private TableColumn<Nuclei, Double> contourquiDiameterColumn;
+
     private boolean okClicked = false;
     private Stage stage;
     // the JavaFX file chooser
@@ -92,9 +107,7 @@ public class StartController {
      * The constructor is called before the initialize() method.
      */
     public StartController(){
-
         comboBoxData.add(new FilterColection("0", "Новий клас"));
-        //personData.add(new Person("Hans", "Muster"));
     }
 
     /**
@@ -103,12 +116,8 @@ public class StartController {
      * @param mainApp
      */
     public void setMainApp(Main mainApp) {
-
         this.mainApp = mainApp;
-        // nucleiTable.setItems(mainApp.getNucleiData());
-
     }
-
 
     /**
      * Initializes the controller class. This method is automatically called
@@ -122,17 +131,20 @@ public class StartController {
         this.image = new Mat();
         this.planes = new ArrayList<>();
 
-
-
         contourNumColumn.setCellValueFactory(cellData -> cellData.getValue().contourNumProperty().asObject());
         contourAreaColumn.setCellValueFactory(cellData -> cellData.getValue().contourAreaProperty().asObject());
         contourPerimetrColumn.setCellValueFactory(cellData -> cellData.getValue().contourPerimetrProperty().asObject());
         contourHeightColumn.setCellValueFactory(cellData -> cellData.getValue().contourHeightProperty().asObject());
         contourWidthColumn.setCellValueFactory(cellData -> cellData.getValue().contourWidthtProperty().asObject());
         contourCircularityColumn.setCellValueFactory(cellData -> cellData.getValue().contourCircularityProperty().asObject());
+        contourXcColumn.setCellValueFactory(cellData -> cellData.getValue().contourXcProperty().asObject());
+        contourYcColumn.setCellValueFactory(cellData -> cellData.getValue().contourYcProperty().asObject());
+        contourMajor_axisColumn.setCellValueFactory(cellData -> cellData.getValue().contourMajor_axisProperty().asObject());
+        contourMinor_axisColumn.setCellValueFactory(cellData -> cellData.getValue().contourMinor_axisProperty().asObject());
+        contourThetaColumn.setCellValueFactory(cellData -> cellData.getValue().contourThetaProperty().asObject());
+        contourquiDiameterColumn.setCellValueFactory(cellData -> cellData.getValue().contourEquiDiameterProperty().asObject());
 
         comboBox.setItems(comboBoxData);
-
     }
 
     public void setStage(Stage stage) {
@@ -161,8 +173,6 @@ public class StartController {
             Mat newImage = sample.model.Image.getImageMat();
             // show the image
             this.setOriginalImage(newImage);
-
-
             // call to object detection function
             try {
                 this.SimpleDetect();
@@ -181,29 +191,33 @@ public class StartController {
         }
     }
 
+    /**
+     * функція, де відбувається підрахунок параметрів обєктів на зображення
+     * та відбувається занесення їх в БД
+     * Спочатку визначаються усі контури,
+     * потім оброхунок по кожному контуру
+     * input:  (Mat) this.image
+     * @throws SQLException
+     */
     @FXML
     public void SimpleDetect() throws SQLException {
 
+        if(nucleiData.size()>0){// очищаємо таблицю, якщо вона заповнена
+            //clearTable();
+        }
         Mat src = this.image;
         Mat src_gray = new Mat();
-        //int thresh = 100;
-        //int max_thresh = 255;
-
         Imgproc.cvtColor(src, src_gray, Imgproc.COLOR_BGR2GRAY);
         Imgproc.blur(src_gray, src_gray, new Size(3, 3));
 
-        //Mat canny_output = new Mat();
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
-
-        //Mat mHsvMat = new Mat();
         Mat mMaskMat = new Mat();
 
         Scalar lowerThreshold = new Scalar ( 0, 0, 0 ); // Blue color – lower hsv values
         Scalar upperThreshold = new Scalar ( 10, 10, 10 ); // Blue color – higher hsv values
         Core.inRange(src, lowerThreshold, upperThreshold, mMaskMat);
 
-        //Imgproc.Canny(src_gray, canny_output, thresh, thresh * 2, 3, false);
         Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
         List<Moments> mu = new ArrayList<Moments>(contours.size());
@@ -211,97 +225,45 @@ public class StartController {
         Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
         Rect rect ;
 
-
-
         for( int i = 0; i< contours.size(); i++ )
         {
             rect = Imgproc.boundingRect(contours.get(i));
             mu.add(i, Imgproc.moments(contours.get(i), false));
             mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
-
-
             MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
-
-
-            /////////////////////////////////////////////////////////////////////////////////////////////////////
-            Moments p = mu.get(i);
-            int x = (int) (p.get_m10() / p.get_m00());
-            int y = (int) (p.get_m01() / p.get_m00());
-
-            double a = (p.get_m20()/p.get_m00()) - x*x;
-            double b = 2*((p.get_m11()/p.get_m00()) - x*y);
-            double c_1 = (p.get_m02()/p.get_m00()) - y*y;
-
-            //System.out.println( "a "+ a);
-            //System.out.println( "b "+ b);
-            //System.out.println( "c "+ c_1);
-
-            double l = Math.sqrt((a+c_1)+ Math.sqrt(b*b + Math.pow((a-c_1),2)))/2;
-            //System.out.println( "l "+ l);
-
-            double w = Math.sqrt((a+c_1)- Math.sqrt(b*b + Math.pow((a-c_1),2)))/2;
-            //System.out.println( "w "+ w);
-
-            //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-            MatOfPoint2f mMOP2f1 = new MatOfPoint2f();
-            contours.get(i).convertTo(mMOP2f1, CvType.CV_32FC2);
-            RotatedRect e = Imgproc.fitEllipse(mMOP2f1);
-
-            double xc    = e.center.x;
-            double yc    = e.center.y;
-            double g     = e.size.width  / 2;    // width >= height
-            double h     = e.size.height / 2;
-            double theta = e.angle;
-
-            System.out.println( "xc "+ xc);
-            System.out.println( "yc "+ yc);
-            System.out.println( "g "+ g);
-            System.out.println( "h "+ h);
-            System.out.println( "theta "+ theta);
-
-            //Imgproc.convexHull(contours.get(i), hull);
-            //MatOfPoint hullContour = hull2Points(hull, contours.get(i));
-
-            //getConvexHull(contours.get(i));
-
-            //Rect box = Imgproc.boundingRect(hullContour);
-            //hullMat = new Mat(drawing, box);
-
-            double circularity = 4*Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
-                    * Imgproc.arcLength(contour2f, true);
-
-            System.out.println(" Контур: " + i + " Площа: " + Imgproc.contourArea(contours.get(i)) + " Периметр: "
-                    + Imgproc.arcLength(contour2f, true) + " X: " + rect.x + " Y: " + rect.y
-                    + " height: " + rect.height + " width: " + rect.width + " Окружність: " + circularity);
-
-            //objectsDs.add(new ObjectsD(i,Imgproc.contourArea(contours.get(i)), Imgproc.arcLength(contour2f, true) ));
-            //Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+            /** малювання обєктів**/
             Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
             Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            MatOfPoint2f mMOP2f1 = new MatOfPoint2f();
+            contours.get(i).convertTo(mMOP2f1, CvType.CV_32FC2);
 
-
-
-
-
-
-
-
-
+            RotatedRect e = Imgproc.fitEllipse(mMOP2f1);
+            /**
+             * Занесення даних до бази даних
+             */
             ResultSet rs = null;
             Connection c = DB.getConn();
             Statement stmt = (Statement) c.createStatement();
 
             String query = "INSERT INTO nuclei_params (image_id, contour_num, contour_area, contour_perimetr," +
-                    " contour_height,contour_width, contour_circularity  ) VALUES (?,?,?,?,?,?,?)";
+                    " contour_height,contour_width, contour_circularity, xc, yc, major_axis, minor_axis, theta," +
+                    " equiDiameter  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,? )";
             PreparedStatement preparedStmt = null;
-
             preparedStmt = (PreparedStatement) c.prepareStatement(query);
 
             double contourArea = Imgproc.contourArea(contours.get(i));
             double perimetr = Imgproc.arcLength(contour2f, true);
             double i_height = rect.height;
             double i_width = rect.y;
+            double circular = 4*Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
+                    * Imgproc.arcLength(contour2f, true);
+            double xc    = e.center.x;
+            double yc    = e.center.y;
+            double major_axis = e.size.height;    // width >= height
+            double minor_axis = e.size.width;
+            double theta = e.angle;
+            double equiDiameter = sqrt(4*contourArea/Math.PI);
 
             preparedStmt.setInt  (1, ResearchParam.getImg_id());
             preparedStmt.setInt  (2, i);
@@ -309,51 +271,31 @@ public class StartController {
             preparedStmt.setDouble(4, perimetr);
             preparedStmt.setDouble(5, i_height);
             preparedStmt.setDouble(6, i_width);
-            preparedStmt.setDouble(7, circularity);
+            preparedStmt.setDouble(7, circular);
+            preparedStmt.setDouble(8, xc);
+            preparedStmt.setDouble(9, yc);
+            preparedStmt.setDouble(10, major_axis);
+            preparedStmt.setDouble(11, minor_axis);
+            preparedStmt.setDouble(12, theta);
+            preparedStmt.setDouble(13, equiDiameter);
             preparedStmt.executeUpdate();
 
-            nucleiData.add(new Nuclei(i,contourArea,perimetr, i_height,i_width,circularity));
+            nucleiData.add(new Nuclei(i,contourArea,perimetr, i_height,i_width,circular, xc,yc,major_axis,minor_axis,
+                    theta,equiDiameter));
 
         }
         nucleiTable.setItems(getNucleiData());
         this.setOriginalImage(drawing);
     }
 
-    public void getConvexHull(MatOfPoint pointMat){
-        MatOfInt hull = new MatOfInt();
-        MatOfPoint points = new MatOfPoint(pointMat);
-
-
-        Imgproc.convexHull(points, hull);
-        Point[] hp = new Point[hull.height()];
-
-        for(int i = 0; i < hull.height(); i++){
-            int index = (int)hull.get(i,0)[0];
-            hp[i] = new Point(pointMat.get(index,0));
+    /**
+     * функція, для очистки таблиці перед кожним дослідом
+     */
+    private void clearTable(){
+        for(int i=0;i<nucleiData.size();i++){
+            Nuclei currentNuclei = (Nuclei) nucleiTable.getItems().get(i);
+            nucleiData.remove(currentNuclei);
         }
-        MatOfPoint hullPoints = new MatOfPoint();
-
-        //Mat d = new Mat();
-        //hullPoints.setTo(d);
-        hullPoints.fromArray(hp);
-
-        //System.out.println("Hullpoint " + Imgproc.contourArea(hullPoints));
-        System.out.println("Hullpoint " + Imgproc.contourArea(hullPoints) );
-
-
-        //System.out.println("Convex " + Imgproc.are);
-        //return new Contour(parent, hullPoints);
-    }
-
-    MatOfPoint hull2Points(MatOfInt hull, MatOfPoint contour) {
-        List<Integer> indexes = hull.toList();
-        List<Point> points = new ArrayList<>();
-        MatOfPoint point= new MatOfPoint();
-        for(Integer index:indexes) {
-            points.add(contour.toList().get(index));
-        }
-        point.fromList(points);
-        return point;
     }
 
     @FXML
@@ -427,16 +369,23 @@ public class StartController {
     @FXML
     public void setResearchName() throws IOException, SQLException, ClassNotFoundException {
 
-        this.researchname = researchNameField.getText();
-        this.insertResearchNameToDb(this.researchname);
-        loadImageButton.setVisible(true);
+        if(researchNameField.getText().isEmpty()){
+            Alert alert = new Alert(AlertType.INFORMATION);
+            alert.setTitle("Попередження");
+            alert.setHeaderText("Поле не може бути пустим");
+            alert.showAndWait();
+        }else{
+            this.researchname = researchNameField.getText();
+            this.insertResearchNameToDb(this.researchname);
+            loadImageButton.setVisible(true);
+        }
     }
 
     @FXML
     public void imageName(String imgN) throws SQLException {
 
         System.out.print(imgN);
-        System.out.println(ResearchParam.getResearch_id());
+        System.out.println("Research id " + ResearchParam.getResearch_id());
         ResearchParam.setImg_name(imgN);
 
         ResultSet rs = null;
@@ -556,7 +505,44 @@ public class StartController {
     }
 }
 
+/*
+    public void getConvexHull(MatOfPoint pointMat){
+        MatOfInt hull = new MatOfInt();
+        MatOfPoint points = new MatOfPoint(pointMat);
 
+
+        Imgproc.convexHull(points, hull);
+        Point[] hp = new Point[hull.height()];
+
+        for(int i = 0; i < hull.height(); i++){
+            int index = (int)hull.get(i,0)[0];
+            hp[i] = new Point(pointMat.get(index,0));
+        }
+        MatOfPoint hullPoints = new MatOfPoint();
+
+        //Mat d = new Mat();
+        //hullPoints.setTo(d);
+        hullPoints.fromArray(hp);
+
+        //System.out.println("Hullpoint " + Imgproc.contourArea(hullPoints));
+        System.out.println("Hullpoint " + Imgproc.contourArea(hullPoints) );
+
+
+        //System.out.println("Convex " + Imgproc.are);
+        //return new Contour(parent, hullPoints);
+    }
+
+    MatOfPoint hull2Points(MatOfInt hull, MatOfPoint contour) {
+        List<Integer> indexes = hull.toList();
+        List<Point> points = new ArrayList<>();
+        MatOfPoint point= new MatOfPoint();
+        for(Integer index:indexes) {
+            points.add(contour.toList().get(index));
+        }
+        point.fromList(points);
+        return point;
+    }
+*/
 /*
     @FXML
     public void detectByColor(){

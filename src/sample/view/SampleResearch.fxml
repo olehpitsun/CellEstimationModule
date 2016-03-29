@@ -15,7 +15,7 @@
 
 <AnchorPane prefHeight="363.0" prefWidth="693.0" stylesheets="@DarkTheme.css" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.controller.SampleResearchController">
     <children>
-        <SplitPane layoutX="153.0" layoutY="70.0" prefHeight="363.0" prefWidth="293.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <SplitPane dividerPositions="0.5, 0.5" layoutX="153.0" layoutY="70.0" prefHeight="363.0" prefWidth="293.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <items>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="362.0" prefWidth="243.0" styleClass="background">
                     <children>
@@ -39,7 +39,7 @@
                             </rowConstraints>
                             <children>
 
-                                <Button fx:id="nextImSettingButton" defaultButton="true" mnemonicParsing="false" onAction="#handleClassesAction" text="Клас" visible="true" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                <Button fx:id="nextImSettingButton" defaultButton="true" mnemonicParsing="false" onAction="#handleClassesAction" text="Вибір досліду" visible="true" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                                 <ComboBox fx:id="comboBoxClasses" layoutX="30.0" onAction="#handleImagesAction" visible="false" GridPane.columnIndex="0" GridPane.rowIndex="1">
                                     <items>
                                         <FXCollections fx:factory="observableArrayList">
@@ -66,14 +66,40 @@
                 <AnchorPane minHeight="0.0" minWidth="525.0" prefHeight="362.0" prefWidth="530.0" styleClass="background" SplitPane.resizableWithParent="false">
                 <children>
                     <Label layoutX="104.0" layoutY="51.0" styleClass="label" text="Вибір параметрів" AnchorPane.leftAnchor="5.0" AnchorPane.topAnchor="5.0" />
-                    <GridPane  prefHeight="216.0" prefWidth="97.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="49.0" AnchorPane.topAnchor="26.0">
-
-                        <CheckBox fx:id="contour_area"  mnemonicParsing="false"  text="Площа" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                        <CheckBox fx:id="contour_perimetr"  mnemonicParsing="false"  text="Периметр" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                        <CheckBox fx:id="contour_height"  mnemonicParsing="false"  text="Довжина" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                        <CheckBox fx:id="contour_width"  mnemonicParsing="false"  text="Ширина" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                        <CheckBox fx:id="contour_circularity"  mnemonicParsing="false"  text="Окружність" GridPane.columnIndex="0" GridPane.rowIndex="4" />
-                        <Button fx:id="nucleiParamConfirmButton" defaultButton="true" mnemonicParsing="false" onAction="#handleCheckBoxAction" text="OK" visible="true" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                    <GridPane layoutX="14.0" layoutY="44.0" prefHeight="269.0" prefWidth="462.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="49.0" AnchorPane.topAnchor="44.0">
+                       <children>
+   
+                           <CheckBox fx:id="contour_area" mnemonicParsing="false" text="Площа" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                           <CheckBox fx:id="contour_perimetr" mnemonicParsing="false" text="Периметр" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                           <CheckBox fx:id="contour_height" mnemonicParsing="false" text="Довжина" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                           <CheckBox fx:id="contour_width" mnemonicParsing="false" text="Ширина" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                           <CheckBox fx:id="contour_circularity" mnemonicParsing="false" text="Окружність" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                           <CheckBox mnemonicParsing="false" text="Xc" GridPane.columnIndex="0" GridPane.rowIndex="5" fx:id="xc" />
+                           <CheckBox fx:id="yc" mnemonicParsing="false" text="Yc" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                           <CheckBox fx:id="major_axis" mnemonicParsing="false" text="major" GridPane.columnIndex="0" GridPane.rowIndex="7" />
+                           <CheckBox fx:id="minor_axis" mnemonicParsing="false" text="minor" GridPane.columnIndex="0" GridPane.rowIndex="8" />
+                           <CheckBox fx:id="theta" mnemonicParsing="false" text="Angle" GridPane.columnIndex="0" GridPane.rowIndex="9" />
+                           <CheckBox fx:id="equiDiameter" mnemonicParsing="false" text="Екв. діаметр" GridPane.columnIndex="0" GridPane.rowIndex="10" />
+   
+                           <Button fx:id="nucleiParamConfirmButton" defaultButton="true" mnemonicParsing="false" onAction="#handleCheckBoxAction" text="OK" visible="true" GridPane.columnIndex="0" GridPane.rowIndex="11" />
+                       </children>
+                     <columnConstraints>
+                        <ColumnConstraints />
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                        <RowConstraints />
+                     </rowConstraints>
 
                     </GridPane>
 
@@ -84,9 +110,17 @@
                     <Label layoutX="104.0" layoutY="51.0" styleClass="label" text="Експорт arff" AnchorPane.leftAnchor="5.0" AnchorPane.topAnchor="5.0" />
 
 
-                    <GridPane  prefHeight="216.0" prefWidth="97.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="49.0" AnchorPane.topAnchor="26.0">
-
-                        <Button fx:id="generateFileButton" defaultButton="true" mnemonicParsing="false" onAction="#generateFile" text="Клас" visible="false" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <GridPane prefHeight="216.0" prefWidth="97.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="49.0" AnchorPane.topAnchor="26.0">
+   <children>
+   
+                           <Button fx:id="generateFileButton" defaultButton="true" mnemonicParsing="false" onAction="#generateFile" text="Клас" visible="false" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+   </children>
+                     <columnConstraints>
+                        <ColumnConstraints />
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints />
+                     </rowConstraints>
 
                     </GridPane>
 
