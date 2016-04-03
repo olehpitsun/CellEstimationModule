@@ -244,6 +244,7 @@ public class StartController {
                  theta = 0;
             }
 
+            System.out.println(perimetr);
             double equiDiameter = sqrt(4*contourArea/Math.PI);
 
             preparedStmt.setInt  (1, ResearchParam.getImg_id());

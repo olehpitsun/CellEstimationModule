@@ -12,6 +12,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.opencv.core.Core;
+import sample.controller.SampleFullResearchController;
 import sample.controller.SampleResearchController;
 import sample.controller.StartController;
 import sample.model.Nuclei;
@@ -103,6 +104,26 @@ public class Main extends Application {
             rootLayout.setCenter(PreProcessing);
             // Give the controller access to the main app.
             SampleResearchController controller = loader.getController();
+            controller.setMainApp(this);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Розширений звіт
+     */
+    public void showFullReport(){
+        try {
+            // Load person overview.
+            FXMLLoader loader = new FXMLLoader();
+            loader.setLocation(Main.class.getResource("view/SampleFullResearch.fxml"));
+            AnchorPane fullRes = (AnchorPane) loader.load();
+
+            // Set person overview into the center of root layout.
+            rootLayout.setCenter(fullRes);
+            // Give the controller access to the main app.
+            SampleFullResearchController controller = loader.getController();
             controller.setMainApp(this);
         } catch (IOException e) {
             e.printStackTrace();

@@ -9,6 +9,7 @@ public class ResearchParam {
     public static String research_name;
     public static String img_name;
     public static Integer img_id;
+    public static String resName;
 
     public static void setResearch_id(Integer res_id){
         research_id = res_id;
@@ -39,5 +40,12 @@ public class ResearchParam {
 
     public static Integer getImg_id(){
         return img_id;
+    }
+
+    public static void setResName(String rn){
+        resName = rn;
+    }
+    public static String getResName(){
+        return resName;
     }
 }

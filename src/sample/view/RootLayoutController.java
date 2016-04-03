@@ -78,6 +78,11 @@ public class RootLayoutController {
     }
 
     @FXML
+    public void handleFullReport(){
+        mainApp.showFullReport();
+    }
+
+    @FXML
     public void SaveImage () {
 
         String path ="";

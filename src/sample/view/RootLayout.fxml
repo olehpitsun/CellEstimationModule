@@ -16,6 +16,8 @@
             <Menu mnemonicParsing="false" text="Звіт">
                 <items>
                     <MenuItem mnemonicParsing="false" onAction="#handleReport" text="Звіт"/>
+                    <MenuItem mnemonicParsing="false" onAction="#handleFullReport" text="Розширений Звіт"/>
+
                 </items>
             </Menu>
 
