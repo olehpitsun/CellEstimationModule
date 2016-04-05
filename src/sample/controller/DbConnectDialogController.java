@@ -1,5 +1,6 @@
 package sample.controller;
 
+import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -7,8 +8,12 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import sample.core.DB;
 
+import javax.sql.DataSource;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Properties;
 
 public class DbConnectDialogController {
 
@@ -49,17 +54,7 @@ public class DbConnectDialogController {
      *
      * @param
      */
-    /*public void setPerson(Person person) {
-        this.person = person;
 
-        firstNameField.setText(person.getFirstName());
-        lastNameField.setText(person.getLastName());
-        streetField.setText(person.getStreet());
-        postalCodeField.setText(Integer.toString(person.getPostalCode()));
-        cityField.setText(person.getCity());
-        birthdayField.setText(DateUtil.format(person.getBirthday()));
-        birthdayField.setPromptText("dd.mm.yyyy");
-    }*/
     public void setConnectField() {
         hostField.setText("localhost");
         portField.setText("3306");
@@ -86,12 +81,13 @@ public class DbConnectDialogController {
         Connection c = null;
 
         if (isInputValid()) {
-            try {
-                c = DB.connect(hostField.getText(), portField.getText(), dbnameField.getText(), userField.getText(), passwordField.getText());
+            //try {
+                //c = DB.connect(hostField.getText(), portField.getText(), dbnameField.getText(), userField.getText(), passwordField.getText());
 
-                DB.setConn(c);//
+                //DB.setConn(c);//
+                getMySQLDataSource(userField.getText(),passwordField.getText() );
 
-            } catch (SQLException e) {
+            /*} catch (SQLException e) {
 
                 // Show the error message.
                 Alert alert = new Alert(AlertType.ERROR);
@@ -102,9 +98,9 @@ public class DbConnectDialogController {
 
                 alert.showAndWait();
                 return;
-            }
+            }*/
 
-            if (c != null) {
+            /*if (c != null) {
                 // Show the error message.
                 Alert alert = new Alert(AlertType.INFORMATION);
                 alert.initOwner(dialogStage);
@@ -123,7 +119,7 @@ public class DbConnectDialogController {
                 alert.setContentText("Неможливо встановити з'єднання");
 
                 alert.showAndWait();
-            }
+            }*/
 
             okClicked = true;
             dialogStage.close();
@@ -132,6 +128,22 @@ public class DbConnectDialogController {
         }
     }
 
+    public static DataSource getMySQLDataSource(String username, String password) {
+        Properties props = new Properties();
+        FileInputStream fis = null;
+        MysqlDataSource mysqlDS = null;
+        //try {
+            //fis = new FileInputStream("db.properties");
+            //props.load(fis);
+            mysqlDS = new MysqlDataSource();
+            mysqlDS.setURL(props.getProperty("mysql://localhost:3306/cell"));
+            mysqlDS.setUser(props.getProperty(username));
+            mysqlDS.setPassword(props.getProperty(password));
+       // } catch (IOException e) {
+        //    e.printStackTrace();
+        //}
+        return mysqlDS;
+    }
 
 
     /**

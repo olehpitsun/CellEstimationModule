@@ -182,7 +182,14 @@ public class Main extends Application {
 
     public static void main(String[] args) {
 
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        try {
+            System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+            System.out.print(Core.NATIVE_LIBRARY_NAME);
+
+
+        }catch (Exception e){
+System.out.print("Error");
+        }
 
         launch(args);
 

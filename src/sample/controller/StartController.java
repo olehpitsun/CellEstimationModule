@@ -6,6 +6,7 @@ import com.mysql.jdbc.Statement;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
@@ -13,6 +14,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.opencv.core.*;
@@ -21,6 +23,7 @@ import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import sample.Main;
+import sample.core.ConnectionUtil;
 import sample.model.Filters.FilterColection;
 import sample.model.Nuclei;
 import sample.model.ResearchParam;
@@ -34,6 +37,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import sample.util.PreProcessingParam;
+
+import javax.sql.DataSource;
 
 import static java.lang.Math.sqrt;
 
@@ -168,6 +173,10 @@ public class StartController {
     @FXML
     public void SimpleDetect() throws SQLException {
 
+
+
+
+
         double xc,yc,major_axis,minor_axis,theta;
 
         if(nucleiData.size()>0){// очищаємо таблицю, якщо вона заповнена
@@ -203,30 +212,41 @@ public class StartController {
             Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
             Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
             //////////////////////////////////////////////////////////////////////////////////////////////////////
+            Core.putText(drawing, Integer.toString(i) , new Point(rect.x-20,rect.y),
+                    Core.FONT_HERSHEY_TRIPLEX, 1.7 ,new  Scalar(255,255,255));
 
             /**
              * Занесення даних до бази даних
              */
-            Connection c = DB.getConn();
+            PreparedStatement preparedStmt;
+            double contourArea;
+            double perimetr;
+            double i_height;
+            double i_width;
+            double circular;
+            MatOfPoint2f mMOP2f1;
+            double equiDiameter;
+            try (Connection c = DB.getConn()) {
 
-            String query = "INSERT INTO nuclei_params (image_id, contour_num, contour_area, contour_perimetr," +
-                    " contour_height,contour_width, contour_circularity, xc, yc, major_axis, minor_axis, theta," +
-                    " equiDiameter  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,? )";
-            PreparedStatement preparedStmt = null;
-            preparedStmt = (PreparedStatement) c.prepareStatement(query);
+                String query = "INSERT INTO nuclei_params (image_id, contour_num, contour_area, contour_perimetr," +
+                        " contour_height,contour_width, contour_circularity, xc, yc, major_axis, minor_axis, theta," +
+                        " equiDiameter  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,? )";
+                preparedStmt = null;
+                preparedStmt = (PreparedStatement) c.prepareStatement(query);
+            }
 
-            double contourArea = Imgproc.contourArea(contours.get(i));
-            double perimetr = Imgproc.arcLength(contour2f, true);
-            double i_height = rect.height;
-            double i_width = rect.y;
-            double circular = 4*Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
+            contourArea = Imgproc.contourArea(contours.get(i));
+            perimetr = Imgproc.arcLength(contour2f, true);
+            i_height = rect.height;
+            i_width = rect.y;
+            circular = 4 * Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
                     * Imgproc.arcLength(contour2f, true);
 
             /**
              * блок підрахунку xc, yc, major_axis, minor_axis, theta
              * якщо площа більше 2. то все йде норм, інакше 0 , щоб не викидало помилок
              */
-            MatOfPoint2f mMOP2f1 = new MatOfPoint2f();
+            mMOP2f1 = new MatOfPoint2f();
             contours.get(i).convertTo(mMOP2f1, CvType.CV_32FC2);
 
             if(contourArea > 2) {
@@ -245,7 +265,7 @@ public class StartController {
             }
 
             System.out.println(perimetr);
-            double equiDiameter = sqrt(4*contourArea/Math.PI);
+            equiDiameter = sqrt(4 * contourArea / Math.PI);
 
             preparedStmt.setInt  (1, ResearchParam.getImg_id());
             preparedStmt.setInt  (2, i);
@@ -281,19 +301,18 @@ public class StartController {
     }
 
     @FXML
-    private void nextImSetting(){
-        Connection c_test = DB.getConn();
-        if(c_test != null ) {
-            try {
+    private void nextImSetting() throws SQLException, ClassNotFoundException {
+
+
+
+        //Connection c_test = DB.getConn();
+        //if(c_test != null ) {
+
                 // c_test.close();// nothing to do. Only for connection test
                 this.showNucleiClasses();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
 
-        }else{
+
+       /* }else{
             Alert alert = new Alert(AlertType.ERROR);
             alert.initOwner(dialogStage);
             alert.setTitle("Помилка");
@@ -301,7 +320,7 @@ public class StartController {
             alert.setContentText("Підключіться до БД");
 
             alert.showAndWait();
-        }
+        }*/
     }
 
     @FXML
@@ -319,23 +338,142 @@ public class StartController {
         }
     }
 
+
+
     public void showNucleiClasses()throws java.sql.SQLException, ClassNotFoundException{
 
+        nucleiTable.setOnMousePressed(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                if (event.isPrimaryButtonDown() && event.getClickCount() == 2) {
+                    System.out.println(nucleiTable.getSelectionModel().getSelectedItem().contourNumProperty().get());
+                    showOnlyOneObject(nucleiTable.getSelectionModel().getSelectedItem().contourNumProperty().get());
+                }
+            }
+        });
+
+        DataSource ds = null;
+
+        ds = DbConnectDialogController.getMySQLDataSource("oleh","oleh123");
+
+
+        Connection con = null;
+        Statement stmt = null;
         ResultSet rs = null;
-        Connection c = DB.getConn();
-        Statement stmt = (Statement) c.createStatement();
-        String query = "select id, name from research_name";
         try {
-            rs = (ResultSet) stmt.executeQuery(query);
+            con = ds.getConnection();
+            stmt = (Statement) con.createStatement();
+            rs = (ResultSet) stmt.executeQuery("select id, name from research_name");
+            while(rs.next()){
+                //System.out.println("Employee ID="+rs.getInt("empid")+", Name="+rs.getString("name"));
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                comboBoxData.add(new FilterColection(Integer.toString(id), name));
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        while (rs.next()) {
-            int id = rs.getInt(1);
-            String name = rs.getString(2);
-            comboBoxData.add(new FilterColection(Integer.toString(id), name));
+     catch (NullPointerException en) {
+        en.printStackTrace();
+    }finally{
+            try {
+                if(rs != null) rs.close();
+                if(stmt != null) stmt.close();
+                if(con != null) con.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
+
+/*
+        ResultSet rs = null;
+        Statement stmt = null;
+        Connection c = null;
+        try {
+            c = ConnectionUtil.getInstance().getConnection();
+            stmt = (Statement) c.createStatement();
+                String query = "select id, name from research_name";
+                try {
+                    rs = (ResultSet) stmt.executeQuery(query);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+
+            while (rs.next()) {
+                int id = rs.getInt(1);
+                String name = rs.getString(2);
+                comboBoxData.add(new FilterColection(Integer.toString(id), name));
+
+            }
+        }finally {
+            if (rs != null) {
+                rs.close();
+            }
+            if (stmt != null) {
+                stmt.close();
+            }
+            if (c != null) {
+                ConnectionUtil.getInstance().close(c);
+            }
+        }*/
         comboBox.setVisible(true);
+    }
+
+    @FXML
+    public void showOnlyOneObject(Integer objNum){
+        double xc,yc,major_axis,minor_axis,theta;
+
+        if(nucleiData.size()>0){// очищаємо таблицю, якщо вона заповнена
+            //clearTable();
+        }
+        Mat src = this.image;
+        Mat src_gray = new Mat();
+        Imgproc.cvtColor(src, src_gray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.blur(src_gray, src_gray, new Size(3, 3));
+
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+        Mat mMaskMat = new Mat();
+
+        Scalar lowerThreshold = new Scalar ( 0, 0, 0 ); // Blue color – lower hsv values
+        Scalar upperThreshold = new Scalar ( 10, 10, 10 ); // Blue color – higher hsv values
+        Core.inRange(src, lowerThreshold, upperThreshold, mMaskMat);
+
+        Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        List<Moments> mu = new ArrayList<Moments>(contours.size());
+        List<Point> mc = new ArrayList<Point>(contours.size());
+        Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
+        Rect rect ;
+
+        for( int i = 0; i< contours.size(); i++ )
+        {
+
+                rect = Imgproc.boundingRect(contours.get(i));
+                mu.add(i, Imgproc.moments(contours.get(i), false));
+                mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
+                MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
+                /** малювання обєктів**/
+
+            if(objNum == i){
+                Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
+                Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
+                //////////////////////////////////////////////////////////////////////////////////////////////////////
+                Core.putText(drawing, Integer.toString(i) , new Point(rect.x,rect.y),
+                    Core.FONT_HERSHEY_COMPLEX, 10.0 ,new  Scalar(0,255,0));
+            }else{
+                Imgproc.drawContours(drawing, contours, i, new Scalar(255, 255, 255), 4, 1, hierarchy, 0, new Point());
+                //Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 0), -1, 2, 0);
+            }
+
+
+
+                MatOfPoint2f mMOP2f1 = new MatOfPoint2f();
+                contours.get(i).convertTo(mMOP2f1, CvType.CV_32FC2);
+
+        }
+        this.setOriginalImage(drawing);
+
     }
 
     @FXML
@@ -458,4 +596,6 @@ public class StartController {
             mainApp.startProcessing();
         }
     }
+
+
 }
