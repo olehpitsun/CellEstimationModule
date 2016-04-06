@@ -7,10 +7,8 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import sample.core.DB;
-
 import javax.sql.DataSource;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -83,9 +81,7 @@ public class DbConnectDialogController {
         if (isInputValid()) {
             try {
                 c = DB.connect(hostField.getText(), portField.getText(), dbnameField.getText(), userField.getText(), passwordField.getText());
-
                 DB.setConn(c);
-                //getMySQLDataSource(userField.getText(),passwordField.getText() );
 
             } catch (SQLException e) {
 
@@ -95,11 +91,9 @@ public class DbConnectDialogController {
                 alert.setTitle("БД");
                 alert.setHeaderText("Помилка");
                 alert.setContentText("Неможливо встановити з'єднання");
-
                 alert.showAndWait();
                 return;
             }
-
             if (c != null) {
                 // Show the error message.
                 Alert alert = new Alert(AlertType.INFORMATION);
@@ -107,9 +101,7 @@ public class DbConnectDialogController {
                 alert.setTitle("БД");
                 alert.setHeaderText("Повідомлення");
                 alert.setContentText("З'єднання встановлено");
-
                 alert.showAndWait();
-
             } else {
                 // Show the error message.
                 Alert alert = new Alert(AlertType.ERROR);
@@ -117,10 +109,8 @@ public class DbConnectDialogController {
                 alert.setTitle("Неможливо встановити з'єднання");
                 alert.setHeaderText("Помилка");
                 alert.setContentText("Неможливо встановити з'єднання");
-
                 alert.showAndWait();
             }
-
             okClicked = true;
             dialogStage.close();
             //c.close();
@@ -167,7 +157,6 @@ public class DbConnectDialogController {
         if (portField.getText() == null || portField.getText().length() == 0) {
             errorMessage += "Заповніть коректно поле ПОРТ!\n";
         }
-
             if (userField.getText() == null || userField.getText().length() == 0) {
                 errorMessage += "Заповніть коректно поле Користувач!\n";
             }
@@ -177,7 +166,6 @@ public class DbConnectDialogController {
             if (dbnameField.getText() == null || dbnameField.getText().length() == 0) {
                 errorMessage += "Заповніть коректно поле Назва БД!\n";
             }
-
             if (errorMessage.length() == 0) {
                 return true;
             } else {
@@ -187,9 +175,7 @@ public class DbConnectDialogController {
                 alert.setTitle("Invalid Fields");
                 alert.setHeaderText("Заповніть коректно поля");
                 alert.setContentText(errorMessage);
-
                 alert.showAndWait();
-
                 return false;
             }
         }

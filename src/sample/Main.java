@@ -29,14 +29,11 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
-        this.primaryStage.setTitle("Аналіз біо зображень");
-
+        this.primaryStage.setTitle("Оцінка параметрів зображення");
         // Set the application icon.
         this.primaryStage.getIcons().add(new Image("file:resources/images/address_book_32.png"));
-
         initRootLayout();
         startProcessing();
-        //showPreprocessing();
     }
 
     /**
@@ -77,21 +74,16 @@ public class Main extends Application {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(Main.class.getResource("view/Start.fxml"));
             AnchorPane PreProcessing = (AnchorPane) loader.load();
-
             // Set person overview into the center of root layout.
             rootLayout.setCenter(PreProcessing);
-
             // Give the controller access to the main app.
             StartController controller = loader.getController();
             controller.setMainApp(this);
-            //nucleiData.add(new Nuclei("1","11",12,13,14,15));
-
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
 
     public void showReport(){
         try {
@@ -170,29 +162,13 @@ public class Main extends Application {
         return primaryStage;
     }
 
-    /*
-    @Override
-    public void start(Stage primaryStage) throws Exception{
-        Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
-        primaryStage.setTitle("Hello World");
-        primaryStage.setScene(new Scene(root, 300, 275));
-        primaryStage.show();
-    }*/
-
-
     public static void main(String[] args) {
-
         try {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            System.out.print(Core.NATIVE_LIBRARY_NAME);
-
-
+            //System.out.print(Core.NATIVE_LIBRARY_NAME);
         }catch (Exception e){
-System.out.print("Error");
+            System.out.print("Error");
         }
-
         launch(args);
-
-
     }
 }

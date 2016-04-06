@@ -4,25 +4,24 @@ import com.mysql.jdbc.ResultSet;
 import com.mysql.jdbc.Statement;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
-import javafx.stage.FileChooser;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
-import org.opencv.core.Mat;
+import org.opencv.core.*;
 import org.opencv.highgui.Highgui;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.imgproc.Moments;
 import sample.Main;
 import sample.core.DB;
 import sample.model.*;
-import sample.model.Filters.FilterColection;
 import sample.tools.ImageOperations;
-
-import java.io.*;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.List;
 
 public class SampleFullResearchController {
 
@@ -91,7 +90,6 @@ public class SampleFullResearchController {
         contourMinor_axisColumn.setCellValueFactory(cellData -> cellData.getValue().contourMinor_axisProperty().asObject());
         contourThetaColumn.setCellValueFactory(cellData -> cellData.getValue().contourThetaProperty().asObject());
         contourquiDiameterColumn.setCellValueFactory(cellData -> cellData.getValue().contourEquiDiameterProperty().asObject());
-
     }
 
     public void setStage(Stage stage) {
@@ -100,7 +98,6 @@ public class SampleFullResearchController {
 
     @FXML
     public void startResearch(){
-        System.out.println(comboBoxClassesData.size());
         if(comboBoxClassesData.size() > 0){
             mainApp.showFullReport();
         }else{
@@ -111,9 +108,12 @@ public class SampleFullResearchController {
             }
         }
     }
+
+    /**
+     * вибір класу (досліду)
+     * @throws SQLException
+     */
     public void handleClassesAction() throws SQLException {
-
-
         comboBoxClasses.setVisible(true);
         ResultSet rs = null;
         Connection c = DB.getConn();
@@ -129,12 +129,15 @@ public class SampleFullResearchController {
             int id = rs.getInt(1);
             String name = rs.getString(2);
             comboBoxClassesData.add(new ClassesColection(Integer.toString(id), name));
-
-            System.out.println(id + name);
         }
         comboBoxClasses.setItems(comboBoxClassesData);
     }
 
+    /**
+     * вибір зображення певного класу (досліду)
+     * @throws SQLException
+     * @throws NullPointerException
+     */
     public void handleImagesAction() throws SQLException, NullPointerException {
 
         comboBoxImages.setVisible(true);
@@ -169,14 +172,12 @@ public class SampleFullResearchController {
         loadSegmentedImage(selectedImage.getImageName());// завантаження сегментованого зображення
 
         imageNameLabel.setText("Зображення: " + selectedImage.getImageName());
-        System.out.println(selectedImage.getId());
         try {
             getNucleiParamByImage(selectedImage.getId());
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-
 
     /**
      * функція завантажує зображення
@@ -198,22 +199,32 @@ public class SampleFullResearchController {
         }
     }
 
+    /**
+     * завантаження маски (сегментованого зображення)
+     * @param imgName
+     */
     public void loadSegmentedImage(String imgName){
         String research_name = ResearchParam.getResName();// назва досліду
         this.image = Highgui.imread( "C:\\biomedical images\\detected microobjects\\" + research_name + "\\segmented\\" + imgName, Highgui.CV_LOAD_IMAGE_COLOR);
         sample.model.Image.setImageMat(this.image);
         Mat newImage = sample.model.Image.getImageMat();
         this.setSegmentedImage(newImage);
+
+        /*** обробка вибору окремого обєкта*/
+        nucleiTable.setOnMousePressed(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                if (event.isPrimaryButtonDown() && event.getClickCount() == 2) {
+                    showOnlyOneObject(newImage, nucleiTable.getSelectionModel().getSelectedItem().contourNumProperty().get());
+                }
+            }
+        });
     }
 
-
-
     private void setOriginalImage(Mat dst ){
-
         this.originalImage.setImage(ImageOperations.mat2Image(dst));
         this.originalImage.setFitWidth(450.0);
         this.originalImage.setFitHeight(450.0);
-
     }
     private void setSegmentedImage(Mat dst ){
         this.segmentedImage.setImage(ImageOperations.mat2Image(dst));
@@ -221,6 +232,61 @@ public class SampleFullResearchController {
         this.segmentedImage.setFitHeight(450.0);
     }
 
+    /**
+     * відображення вибраного обєкта
+     * @param img Mat
+     * @param objNum номер обєкта
+     */
+    @FXML
+    public void showOnlyOneObject(Mat img, Integer objNum){
+        Mat src = img;
+        Mat src_gray = new Mat();
+        Imgproc.cvtColor(src, src_gray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.blur(src_gray, src_gray, new Size(3, 3));
+
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+        Mat mMaskMat = new Mat();
+
+        Scalar lowerThreshold = new Scalar ( 0, 0, 0 ); // Blue color – lower hsv values
+        Scalar upperThreshold = new Scalar ( 10, 10, 10 ); // Blue color – higher hsv values
+        Core.inRange(src, lowerThreshold, upperThreshold, mMaskMat);
+
+        Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        List<Moments> mu = new ArrayList<Moments>(contours.size());
+        List<Point> mc = new ArrayList<Point>(contours.size());
+        Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
+        Rect rect ;
+
+        for( int i = 0; i< contours.size(); i++ )
+        {
+            rect = Imgproc.boundingRect(contours.get(i));
+            mu.add(i, Imgproc.moments(contours.get(i), false));
+            mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
+            /** малювання обєктів**/
+            if(objNum == i){
+                Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
+                Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
+                //////////////////////////////////////////////////////////////////////////////////////////////////////
+                Core.putText(drawing, Integer.toString(i) , new Point(rect.x,rect.y),
+                        Core.FONT_HERSHEY_COMPLEX, 10.0 ,new  Scalar(0,255,0));
+            }else{
+                Imgproc.drawContours(drawing, contours, i, new Scalar(255, 255, 255), 5, 1, hierarchy, 0, new Point());
+            }
+
+            MatOfPoint2f mMOP2f1 = new MatOfPoint2f();
+            contours.get(i).convertTo(mMOP2f1, CvType.CV_32FC2);
+        }
+        this.setSegmentedImage(drawing);
+
+    }
+
+    /**
+     * вибірка параметрів ядер окремого зображення
+     * @param imageId ід зображеня
+     * @throws SQLException
+     */
     public void getNucleiParamByImage(String imageId) throws SQLException {
 
         ResultSet rs = null;
@@ -247,8 +313,6 @@ public class SampleFullResearchController {
             Double minor_axis = rs.getDouble(10);
             Double theta = rs.getDouble(11);
             Double equiDiameter = rs.getDouble(12);
-
-
             nucleiData.add(new Nuclei(id,contour_area,contour_perimetr, contour_height,contour_width,
                     contour_circularity, xc, yc, major_axis, minor_axis, theta,equiDiameter));
         }

@@ -104,8 +104,6 @@ public class SampleResearchController {
             int id = rs.getInt(1);
             String name = rs.getString(2);
             comboBoxClassesData.add(new ClassesColection(Integer.toString(id), name));
-
-            System.out.println(id + name);
         }
         comboBoxClasses.setItems(comboBoxClassesData);
     }
@@ -228,7 +226,6 @@ public class SampleResearchController {
         while (rs.next()) {
             String filename = rs.getString(1);
             FileParam.setFilename(filename);
-            System.out.println("Oleh " + filename);
         }
 
         String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
@@ -251,7 +248,6 @@ public class SampleResearchController {
         /*** вибірка параметрів ядер для кожного зображення із comboBoxImagesData*/
         if(selectedImagesId.size() > 0 ){
             for(int i=0; i<selectedImagesId.size(); i++ ){
-                System.out.println(selectedImagesId.get(i).toString());
                 showNucleiParam(bw, selectedImagesId.get(i).toString() );
             }
         }else{

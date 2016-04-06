@@ -31,7 +31,6 @@ public class DB {
         Properties p = new Properties();
         p.put("user",user);
         p.put("password",password);
-
         // Now try to connect
         Connection c = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + dbname,p);
         return c;

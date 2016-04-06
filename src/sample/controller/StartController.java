@@ -1,7 +1,6 @@
 package sample.controller;
 
 import com.mysql.jdbc.PreparedStatement;
-
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -22,14 +21,12 @@ import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import sample.Main;
-import sample.core.ConnectionUtil;
 import sample.model.DataBase;
 import sample.model.Filters.FilterColection;
 import sample.model.Nuclei;
 import sample.model.ResearchParam;
 import sample.tools.ImageOperations;
 import sample.core.DB;
-
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
@@ -37,15 +34,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import sample.util.PreProcessingParam;
-
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
-
-import javax.sql.DataSource;
-
 import static java.lang.Math.sqrt;
 
 public class StartController {
@@ -179,15 +169,7 @@ public class StartController {
     @FXML
     public void SimpleDetect() throws SQLException {
 
-
-
-
-
         double xc,yc,major_axis,minor_axis,theta;
-
-        if(nucleiData.size()>0){// очищаємо таблицю, якщо вона заповнена
-            //clearTable();
-        }
         Mat src = this.image;
         Mat src_gray = new Mat();
         Imgproc.cvtColor(src, src_gray, Imgproc.COLOR_BGR2GRAY);
@@ -197,12 +179,10 @@ public class StartController {
         Mat hierarchy = new Mat();
         Mat mMaskMat = new Mat();
 
-        Scalar lowerThreshold = new Scalar ( 0, 0, 0 ); // Blue color – lower hsv values
-        Scalar upperThreshold = new Scalar ( 10, 10, 10 ); // Blue color – higher hsv values
+        Scalar lowerThreshold = new Scalar ( 0, 0, 0 );
+        Scalar upperThreshold = new Scalar ( 10, 10, 10 );
         Core.inRange(src, lowerThreshold, upperThreshold, mMaskMat);
-
         Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-
         List<Moments> mu = new ArrayList<Moments>(contours.size());
         List<Point> mc = new ArrayList<Point>(contours.size());
         Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
@@ -220,18 +200,9 @@ public class StartController {
             //////////////////////////////////////////////////////////////////////////////////////////////////////
             Core.putText(drawing, Integer.toString(i) , new Point(rect.x-20,rect.y),
                     Core.FONT_HERSHEY_TRIPLEX, 1.7 ,new  Scalar(255,255,255));
-
-            /**
-             * Занесення даних до бази даних
-             */
-
-            double contourArea;
-            double perimetr;
-            double i_height;
-            double i_width;
-            double circular;
+            /*** Занесення даних до бази даних*/
+            double contourArea, perimetr, i_height, i_width, circular, equiDiameter;
             MatOfPoint2f mMOP2f1;
-            double equiDiameter;
 
             contourArea = Imgproc.contourArea(contours.get(i));
             perimetr = Imgproc.arcLength(contour2f, true);
@@ -239,7 +210,6 @@ public class StartController {
             i_width = rect.y;
             circular = 4 * Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
                     * Imgproc.arcLength(contour2f, true);
-
             /**
              * блок підрахунку xc, yc, major_axis, minor_axis, theta
              * якщо площа більше 2. то все йде норм, інакше 0 , щоб не викидало помилок
@@ -297,13 +267,8 @@ public class StartController {
                     e.printStackTrace();
                 }
             }
-
-
-
-
             nucleiData.add(new Nuclei(i,contourArea,perimetr, i_height,i_width,circular, xc,yc,major_axis,minor_axis,
                     theta,equiDiameter));
-
         }
         nucleiTable.setItems(getNucleiData());
         this.setOriginalImage(drawing);
@@ -319,27 +284,25 @@ public class StartController {
         }
     }
 
+    /**
+     * обробка кнопки "Далі",
+     * якщо немає зєднання з БД, то вивід помилки
+     * @throws SQLException
+     * @throws ClassNotFoundException
+     */
     @FXML
     private void nextImSetting() throws SQLException, ClassNotFoundException {
-
-
-
-        //Connection c_test = DB.getConn();
-        //if(c_test != null ) {
-
-                // c_test.close();// nothing to do. Only for connection test
-                this.showNucleiClasses();
-
-
-       /* }else{
+        Connection c_test = DB.getConn();
+        if(c_test != null ) {
+            this.showNucleiClasses();
+        }else{
             Alert alert = new Alert(AlertType.ERROR);
             alert.initOwner(dialogStage);
             alert.setTitle("Помилка");
             alert.setHeaderText("Виникла помилка");
             alert.setContentText("Підключіться до БД");
-
             alert.showAndWait();
-        }*/
+        }
     }
 
     @FXML
@@ -357,35 +320,32 @@ public class StartController {
         }
     }
 
-
-
+    /**
+     * відображає усі класи(досліди)
+     * @throws java.sql.SQLException
+     * @throws ClassNotFoundException
+     */
     public void showNucleiClasses()throws java.sql.SQLException, ClassNotFoundException{
 
         nucleiTable.setOnMousePressed(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
                 if (event.isPrimaryButtonDown() && event.getClickCount() == 2) {
-                    System.out.println(nucleiTable.getSelectionModel().getSelectedItem().contourNumProperty().get());
                     showOnlyOneObject(nucleiTable.getSelectionModel().getSelectedItem().contourNumProperty().get());
                 }
             }
         });
 
         DataBase.getConnection();
-        DataSource ds = null;
-        //ds = DataBase.getMySQLDataSource();
-
-
+        Connection con;
         Statement stmt = null;
-        Connection con = null;
-        //com.mysql.jdbc.PreparedStatement stmt = null;
         com.mysql.jdbc.ResultSet rs = null;
+
         try {
             con = DB.getConn();
             stmt = (Statement) con.createStatement();
             rs = (com.mysql.jdbc.ResultSet) stmt.executeQuery("select id, name from research_name");
             while(rs.next()){
-                //System.out.println("Employee ID="+rs.getInt("empid")+", Name="+rs.getString("name"));
                 int id = rs.getInt("id");
                 String name = rs.getString("name");
                 comboBoxData.add(new FilterColection(Integer.toString(id), name));
@@ -404,75 +364,37 @@ public class StartController {
                 e.printStackTrace();
             }
         }
-
-/*
-        ResultSet rs = null;
-        Statement stmt = null;
-        Connection c = null;
-        try {
-            c = ConnectionUtil.getInstance().getConnection();
-            stmt = (Statement) c.createStatement();
-                String query = "select id, name from research_name";
-                try {
-                    rs = (ResultSet) stmt.executeQuery(query);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-
-            while (rs.next()) {
-                int id = rs.getInt(1);
-                String name = rs.getString(2);
-                comboBoxData.add(new FilterColection(Integer.toString(id), name));
-
-            }
-        }finally {
-            if (rs != null) {
-                rs.close();
-            }
-            if (stmt != null) {
-                stmt.close();
-            }
-            if (c != null) {
-                ConnectionUtil.getInstance().close(c);
-            }
-        }*/
         comboBox.setVisible(true);
     }
 
+    /**
+     * відображає лише одне ядро на зображенні
+     * по номеру
+     * @param objNum
+     */
     @FXML
     public void showOnlyOneObject(Integer objNum){
-        double xc,yc,major_axis,minor_axis,theta;
-
-        if(nucleiData.size()>0){// очищаємо таблицю, якщо вона заповнена
-            //clearTable();
-        }
         Mat src = this.image;
         Mat src_gray = new Mat();
         Imgproc.cvtColor(src, src_gray, Imgproc.COLOR_BGR2GRAY);
         Imgproc.blur(src_gray, src_gray, new Size(3, 3));
-
         List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
         Mat hierarchy = new Mat();
         Mat mMaskMat = new Mat();
-
         Scalar lowerThreshold = new Scalar ( 0, 0, 0 ); // Blue color – lower hsv values
         Scalar upperThreshold = new Scalar ( 10, 10, 10 ); // Blue color – higher hsv values
         Core.inRange(src, lowerThreshold, upperThreshold, mMaskMat);
-
         Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-
         List<Moments> mu = new ArrayList<Moments>(contours.size());
         List<Point> mc = new ArrayList<Point>(contours.size());
         Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
         Rect rect ;
-
         for( int i = 0; i< contours.size(); i++ )
         {
-
-                rect = Imgproc.boundingRect(contours.get(i));
-                mu.add(i, Imgproc.moments(contours.get(i), false));
-                mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
-                MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
+            rect = Imgproc.boundingRect(contours.get(i));
+            mu.add(i, Imgproc.moments(contours.get(i), false));
+            mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
+            MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
                 /** малювання обєктів**/
 
             if(objNum == i){
@@ -483,19 +405,20 @@ public class StartController {
                     Core.FONT_HERSHEY_COMPLEX, 10.0 ,new  Scalar(0,255,0));
             }else{
                 Imgproc.drawContours(drawing, contours, i, new Scalar(255, 255, 255), 4, 1, hierarchy, 0, new Point());
-                //Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 0), -1, 2, 0);
             }
-
-
-
                 MatOfPoint2f mMOP2f1 = new MatOfPoint2f();
                 contours.get(i).convertTo(mMOP2f1, CvType.CV_32FC2);
-
         }
         this.setOriginalImage(drawing);
 
     }
 
+    /**
+     * Поле вводу назви нового класу (досліду)
+     * @throws IOException
+     * @throws SQLException
+     * @throws ClassNotFoundException
+     */
     @FXML
     public void setResearchName() throws IOException, SQLException, ClassNotFoundException {
 
@@ -511,11 +434,55 @@ public class StartController {
         }
     }
 
+    /**
+     * занесення нового класу (досліду) до БД
+     * @param res_name
+     */
+    @FXML
+    public void insertResearchNameToDb(String res_name)  {
+
+        DataBase.getConnection();
+        Connection con ;
+        com.mysql.jdbc.PreparedStatement stmt = null;
+        com.mysql.jdbc.ResultSet rs = null;
+        try {
+            con = DB.getConn();
+            String query = "INSERT INTO research_name (name) VALUES (?)";
+            stmt = (PreparedStatement) con.prepareStatement(query);
+            stmt.setString  (1, res_name);
+            stmt.executeUpdate();
+
+            com.mysql.jdbc.ResultSet rs_1 = null;
+            com.mysql.jdbc.Statement stmt_1 = (com.mysql.jdbc.Statement) con.createStatement();
+            String query_1 = "select MAX(id) from research_name";
+            try {
+                rs_1 = (com.mysql.jdbc.ResultSet) stmt_1.executeQuery(query_1);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            while (rs_1.next()) {
+                int size = rs_1.getInt(1);
+                ResearchParam.setResearch_id(size);
+            }
+            } catch (SQLException e1) {
+            e1.printStackTrace();
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }finally{
+            try {
+                if(rs != null) rs.close();
+                if(stmt != null) stmt.close();
+                //if(con != null) con.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     @FXML
     public void imageName(String imgN) throws SQLException {
 
-        System.out.print(imgN);
-        System.out.println("Research id " + ResearchParam.getResearch_id());
         ResearchParam.setImg_name(imgN);
         Connection c = DB.getConn();
         String query = "INSERT INTO images (research_id, image_name) VALUES (?,?)";
@@ -537,93 +504,10 @@ public class StartController {
         while (rs_1.next()) {
             int img_id = rs_1.getInt(1);
             ResearchParam.setImg_id(img_id);
-
-            System.out.printf("img_id: "+img_id);
         }
     }
-
-    @FXML
-    public void insertResearchNameToDb(String res_name)  {
-
-
-        DataBase.getConnection();
-        DataSource ds = null;
-        //ds = DataBase.getMySQLDataSource();
-
-
-        //PreparedStatement stmt = null;
-        Connection con ;
-        com.mysql.jdbc.PreparedStatement stmt = null;
-        com.mysql.jdbc.ResultSet rs = null;
-        try {
-            con = DB.getConn();
-            String query = "INSERT INTO research_name (name) VALUES (?)";
-            stmt = (PreparedStatement) con.prepareStatement(query);
-            stmt.setString  (1, res_name);
-            stmt.executeUpdate();
-
-
-            com.mysql.jdbc.ResultSet rs_1 = null;
-            com.mysql.jdbc.Statement stmt_1 = (com.mysql.jdbc.Statement) con.createStatement();
-            String query_1 = "select MAX(id) from research_name";
-            try {
-                rs_1 = (com.mysql.jdbc.ResultSet) stmt_1.executeQuery(query_1);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-
-            while (rs_1.next()) {
-                int size = rs_1.getInt(1);
-                ResearchParam.setResearch_id(size);
-
-                System.out.printf("size: "+size);
-            }
-            } catch (SQLException e1) {
-            e1.printStackTrace();
-        }
-
-        catch (NullPointerException e) {
-            e.printStackTrace();
-        }finally{
-            try {
-                if(rs != null) rs.close();
-                if(stmt != null) stmt.close();
-                //if(con != null) con.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-
-
-
-        /*
-        Connection c = DB.getConn();
-
-        String query = "INSERT INTO research_name (name) VALUES (?)";
-        PreparedStatement preparedStmt = (PreparedStatement) c.prepareStatement(query);
-        preparedStmt.setString  (1, res_name);
-        preparedStmt.executeUpdate();
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        com.mysql.jdbc.ResultSet rs_1 = null;
-        com.mysql.jdbc.Statement stmt_1 = (com.mysql.jdbc.Statement) c.createStatement();
-        String query_1 = "select MAX(id) from research_name";
-        try {
-            rs_1 = (com.mysql.jdbc.ResultSet) stmt_1.executeQuery(query_1);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        while (rs_1.next()) {
-            int size = rs_1.getInt(1);
-            ResearchParam.setResearch_id(size);
-
-            System.out.printf("size: "+size);
-        }*/
-    }
-
+    /**відображення завантаженого зображення
+     */
     private void setOriginalImage(Mat dst ){
         this.originalImage.setImage(ImageOperations.mat2Image(dst));
         this.originalImage.setFitWidth(650.0);

@@ -1,29 +1,10 @@
 package sample.model;
 
 import com.mysql.jdbc.Connection;
-import com.mysql.jdbc.ResultSet;
-import com.mysql.jdbc.Statement;
-import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-
-import javax.sql.DataSource;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
-
-import javax.sql.DataSource;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
-
-import javax.sql.DataSource;
 
 public class DataBase {
 
@@ -55,12 +36,8 @@ public class DataBase {
     public static void getConnection(){
         Connection conn = null;
         try {
-            conn =
-                    (Connection) DriverManager.getConnection("jdbc:mysql://localhost/cell?" +
+            conn = (Connection) DriverManager.getConnection("jdbc:mysql://localhost/cell?" +
                             "user=oleh&password=oleh123");
-
-            // Do something with the Connection
-
         } catch (SQLException ex) {
             // handle any errors
             System.out.println("SQLException: " + ex.getMessage());
