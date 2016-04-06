@@ -81,13 +81,13 @@ public class DbConnectDialogController {
         Connection c = null;
 
         if (isInputValid()) {
-            //try {
-                //c = DB.connect(hostField.getText(), portField.getText(), dbnameField.getText(), userField.getText(), passwordField.getText());
+            try {
+                c = DB.connect(hostField.getText(), portField.getText(), dbnameField.getText(), userField.getText(), passwordField.getText());
 
-                //DB.setConn(c);//
-                getMySQLDataSource(userField.getText(),passwordField.getText() );
+                DB.setConn(c);
+                //getMySQLDataSource(userField.getText(),passwordField.getText() );
 
-            /*} catch (SQLException e) {
+            } catch (SQLException e) {
 
                 // Show the error message.
                 Alert alert = new Alert(AlertType.ERROR);
@@ -98,9 +98,9 @@ public class DbConnectDialogController {
 
                 alert.showAndWait();
                 return;
-            }*/
+            }
 
-            /*if (c != null) {
+            if (c != null) {
                 // Show the error message.
                 Alert alert = new Alert(AlertType.INFORMATION);
                 alert.initOwner(dialogStage);
@@ -119,7 +119,7 @@ public class DbConnectDialogController {
                 alert.setContentText("Неможливо встановити з'єднання");
 
                 alert.showAndWait();
-            }*/
+            }
 
             okClicked = true;
             dialogStage.close();

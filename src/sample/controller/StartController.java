@@ -1,8 +1,7 @@
 package sample.controller;
 
 import com.mysql.jdbc.PreparedStatement;
-import com.mysql.jdbc.ResultSet;
-import com.mysql.jdbc.Statement;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -24,6 +23,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 import sample.Main;
 import sample.core.ConnectionUtil;
+import sample.model.DataBase;
 import sample.model.Filters.FilterColection;
 import sample.model.Nuclei;
 import sample.model.ResearchParam;
@@ -37,6 +37,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import sample.util.PreProcessingParam;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 import javax.sql.DataSource;
 
@@ -218,7 +224,7 @@ public class StartController {
             /**
              * Занесення даних до бази даних
              */
-            PreparedStatement preparedStmt;
+
             double contourArea;
             double perimetr;
             double i_height;
@@ -226,14 +232,6 @@ public class StartController {
             double circular;
             MatOfPoint2f mMOP2f1;
             double equiDiameter;
-            try (Connection c = DB.getConn()) {
-
-                String query = "INSERT INTO nuclei_params (image_id, contour_num, contour_area, contour_perimetr," +
-                        " contour_height,contour_width, contour_circularity, xc, yc, major_axis, minor_axis, theta," +
-                        " equiDiameter  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,? )";
-                preparedStmt = null;
-                preparedStmt = (PreparedStatement) c.prepareStatement(query);
-            }
 
             contourArea = Imgproc.contourArea(contours.get(i));
             perimetr = Imgproc.arcLength(contour2f, true);
@@ -251,36 +249,57 @@ public class StartController {
 
             if(contourArea > 2) {
                 RotatedRect e = Imgproc.fitEllipse(mMOP2f1);
-                 xc = e.center.x;
-                 yc = e.center.y;
-                 major_axis = e.size.height;    // width >= height
-                 minor_axis = e.size.width;
-                 theta = e.angle;
+                xc = e.center.x;
+                yc = e.center.y;
+                major_axis = e.size.height;    // width >= height
+                minor_axis = e.size.width;
+                theta = e.angle;
             }else{
-                 xc = 0;
-                 yc = 0;
-                 major_axis = 0;    // width >= height
-                 minor_axis = 0;
-                 theta = 0;
+                xc = 0;
+                yc = 0;
+                major_axis = 0;    // width >= height
+                minor_axis = 0;
+                theta = 0;
             }
-
-            System.out.println(perimetr);
             equiDiameter = sqrt(4 * contourArea / Math.PI);
 
-            preparedStmt.setInt  (1, ResearchParam.getImg_id());
-            preparedStmt.setInt  (2, i);
-            preparedStmt.setDouble(3,contourArea);
-            preparedStmt.setDouble(4, perimetr);
-            preparedStmt.setDouble(5, i_height);
-            preparedStmt.setDouble(6, i_width);
-            preparedStmt.setDouble(7, circular);
-            preparedStmt.setDouble(8, xc);
-            preparedStmt.setDouble(9, yc);
-            preparedStmt.setDouble(10, major_axis);
-            preparedStmt.setDouble(11, minor_axis);
-            preparedStmt.setDouble(12, theta);
-            preparedStmt.setDouble(13, equiDiameter);
-            preparedStmt.executeUpdate();
+            Connection con ;
+            com.mysql.jdbc.PreparedStatement stmt = null;
+            com.mysql.jdbc.ResultSet rs = null;
+            try {
+                con = DB.getConn();
+                String query = "INSERT INTO nuclei_params (image_id, contour_num, contour_area, contour_perimetr," +
+                        " contour_height,contour_width, contour_circularity, xc, yc, major_axis, minor_axis, theta," +
+                        " equiDiameter  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,? )";
+                stmt = (PreparedStatement) con.prepareStatement(query);
+                stmt.setInt(1, ResearchParam.getImg_id());
+                stmt.setInt(2, i);
+                stmt.setDouble(3, contourArea);
+                stmt.setDouble(4, perimetr);
+                stmt.setDouble(5, i_height);
+                stmt.setDouble(6, i_width);
+                stmt.setDouble(7, circular);
+                stmt.setDouble(8, xc);
+                stmt.setDouble(9, yc);
+                stmt.setDouble(10, major_axis);
+                stmt.setDouble(11, minor_axis);
+                stmt.setDouble(12, theta);
+                stmt.setDouble(13, equiDiameter);
+                stmt.executeUpdate();
+            }catch (NullPointerException e) {
+                e.printStackTrace();
+            }finally{
+                try {
+                    if(rs != null) rs.close();
+                    if(stmt != null) stmt.close();
+                    //if(con != null) con.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+
+
+
 
             nucleiData.add(new Nuclei(i,contourArea,perimetr, i_height,i_width,circular, xc,yc,major_axis,minor_axis,
                     theta,equiDiameter));
@@ -352,18 +371,19 @@ public class StartController {
             }
         });
 
+        DataBase.getConnection();
         DataSource ds = null;
+        //ds = DataBase.getMySQLDataSource();
 
-        ds = DbConnectDialogController.getMySQLDataSource("oleh","oleh123");
 
-
-        Connection con = null;
         Statement stmt = null;
-        ResultSet rs = null;
+        Connection con = null;
+        //com.mysql.jdbc.PreparedStatement stmt = null;
+        com.mysql.jdbc.ResultSet rs = null;
         try {
-            con = ds.getConnection();
+            con = DB.getConn();
             stmt = (Statement) con.createStatement();
-            rs = (ResultSet) stmt.executeQuery("select id, name from research_name");
+            rs = (com.mysql.jdbc.ResultSet) stmt.executeQuery("select id, name from research_name");
             while(rs.next()){
                 //System.out.println("Employee ID="+rs.getInt("empid")+", Name="+rs.getString("name"));
                 int id = rs.getInt("id");
@@ -373,13 +393,13 @@ public class StartController {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-     catch (NullPointerException en) {
-        en.printStackTrace();
+     catch (NullPointerException e) {
+        e.printStackTrace();
     }finally{
             try {
                 if(rs != null) rs.close();
                 if(stmt != null) stmt.close();
-                if(con != null) con.close();
+                //if(con != null) con.close();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -506,11 +526,11 @@ public class StartController {
         preparedStmt.setString  (2, imgN);
         preparedStmt.executeUpdate();
         //////////////////////////////////////////////////////////////////////////
-        ResultSet rs_1 = null;
-        Statement stmt_1 = (Statement) c.createStatement();
+        com.mysql.jdbc.ResultSet rs_1 = null;
+        com.mysql.jdbc.Statement stmt_1 = (com.mysql.jdbc.Statement) c.createStatement();
         String query_1 = "select MAX(id) from images";
         try {
-            rs_1 = (ResultSet) stmt_1.executeQuery(query_1);
+            rs_1 = (com.mysql.jdbc.ResultSet) stmt_1.executeQuery(query_1);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -523,8 +543,60 @@ public class StartController {
     }
 
     @FXML
-    public void insertResearchNameToDb(String res_name) throws java.sql.SQLException, ClassNotFoundException {
+    public void insertResearchNameToDb(String res_name)  {
 
+
+        DataBase.getConnection();
+        DataSource ds = null;
+        //ds = DataBase.getMySQLDataSource();
+
+
+        //PreparedStatement stmt = null;
+        Connection con ;
+        com.mysql.jdbc.PreparedStatement stmt = null;
+        com.mysql.jdbc.ResultSet rs = null;
+        try {
+            con = DB.getConn();
+            String query = "INSERT INTO research_name (name) VALUES (?)";
+            stmt = (PreparedStatement) con.prepareStatement(query);
+            stmt.setString  (1, res_name);
+            stmt.executeUpdate();
+
+
+            com.mysql.jdbc.ResultSet rs_1 = null;
+            com.mysql.jdbc.Statement stmt_1 = (com.mysql.jdbc.Statement) con.createStatement();
+            String query_1 = "select MAX(id) from research_name";
+            try {
+                rs_1 = (com.mysql.jdbc.ResultSet) stmt_1.executeQuery(query_1);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            while (rs_1.next()) {
+                int size = rs_1.getInt(1);
+                ResearchParam.setResearch_id(size);
+
+                System.out.printf("size: "+size);
+            }
+            } catch (SQLException e1) {
+            e1.printStackTrace();
+        }
+
+        catch (NullPointerException e) {
+            e.printStackTrace();
+        }finally{
+            try {
+                if(rs != null) rs.close();
+                if(stmt != null) stmt.close();
+                //if(con != null) con.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+
+        /*
         Connection c = DB.getConn();
 
         String query = "INSERT INTO research_name (name) VALUES (?)";
@@ -535,11 +607,11 @@ public class StartController {
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        ResultSet rs_1 = null;
-        Statement stmt_1 = (Statement) c.createStatement();
+        com.mysql.jdbc.ResultSet rs_1 = null;
+        com.mysql.jdbc.Statement stmt_1 = (com.mysql.jdbc.Statement) c.createStatement();
         String query_1 = "select MAX(id) from research_name";
         try {
-            rs_1 = (ResultSet) stmt_1.executeQuery(query_1);
+            rs_1 = (com.mysql.jdbc.ResultSet) stmt_1.executeQuery(query_1);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -549,7 +621,7 @@ public class StartController {
             ResearchParam.setResearch_id(size);
 
             System.out.printf("size: "+size);
-        }
+        }*/
     }
 
     private void setOriginalImage(Mat dst ){
