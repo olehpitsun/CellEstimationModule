@@ -29,8 +29,12 @@ import sample.tools.ImageOperations;
 import sample.core.DB;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.file.*;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import sample.util.PreProcessingParam;
@@ -122,6 +126,50 @@ public class StartController {
         this.stage = stage;
     }
 
+    @FXML
+    public void folder(){
+
+        String f = "C:\\IMAGES\\mask_nuclei_(16042015_gisto_neproliferatyvna_mastopotia)";
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(f))) {
+            for (Path file: stream) {
+                if(!file.toFile().isDirectory() ) {
+                    System.out.println(file.getFileName());
+                    calculate(f, file.getFileName().toString());
+                }
+            }
+        } catch (IOException | DirectoryIteratorException x) {
+            System.err.println(x);
+        }
+
+
+    }
+
+    public void calculate(String path, String filename){
+
+        String fullpath = path + "//" + filename;
+        this.image = Highgui.imread( fullpath,  Highgui.CV_LOAD_IMAGE_COLOR);
+        sample.model.Image.setImageMat(this.image);
+        originalImagePath = filename;
+        System.out.println("img " + originalImagePath);
+        try {
+            this.imageName(originalImagePath);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        Mat newImage = sample.model.Image.getImageMat();
+        this.setOriginalImage(newImage);            // show the image
+        // call to object detection function
+        try {
+            this.SimpleDetect();
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
     public void chooseFile(ActionEvent actionEvent) throws IOException {
 
         FileChooser chooser = new FileChooser();
@@ -131,9 +179,11 @@ public class StartController {
         File file = chooser.showOpenDialog(new Stage());
         if(file != null) {
 
+            System.out.println(file.getAbsolutePath());
             this.image = Highgui.imread(file.getAbsolutePath(), Highgui.CV_LOAD_IMAGE_COLOR);
             sample.model.Image.setImageMat(this.image);
             originalImagePath = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf("\\")+1);
+            System.out.println("1 " + originalImagePath);
             try {
                 this.imageName(originalImagePath);
             } catch (SQLException e) {
@@ -210,6 +260,10 @@ public class StartController {
             i_width = rect.y;
             circular = 4 * Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
                     * Imgproc.arcLength(contour2f, true);
+
+
+
+            circular = Math.round(circular * 100.0) / 100.0;
             /**
              * блок підрахунку xc, yc, major_axis, minor_axis, theta
              * якщо площа більше 2. то все йде норм, інакше 0 , щоб не викидало помилок
@@ -482,6 +536,9 @@ public class StartController {
 
     @FXML
     public void imageName(String imgN) throws SQLException {
+
+        imgN = imgN.replace( ' ', '#' );
+        System.out.println(imgN);
 
         ResearchParam.setImg_name(imgN);
         Connection c = DB.getConn();

@@ -36,7 +36,7 @@ public class DataBase {
     public static void getConnection(){
         Connection conn = null;
         try {
-            conn = (Connection) DriverManager.getConnection("jdbc:mysql://localhost/cell?" +
+            conn = (Connection) DriverManager.getConnection("jdbc:mysql://localhost/BioImageApp?" +
                             "user=oleh&password=oleh123");
         } catch (SQLException ex) {
             // handle any errors

@@ -58,7 +58,7 @@ public class DbConnectDialogController {
         portField.setText("3306");
         userField.setText("oleh");
         passwordField.setText("oleh123");
-        dbnameField.setText("cell");
+        dbnameField.setText("BioImageApp");
     }
 
     /**
@@ -126,7 +126,7 @@ public class DbConnectDialogController {
             //fis = new FileInputStream("db.properties");
             //props.load(fis);
             mysqlDS = new MysqlDataSource();
-            mysqlDS.setURL(props.getProperty("mysql://localhost:3306/cell"));
+            mysqlDS.setURL(props.getProperty("mysql://localhost:3306/BioImageApp"));
             mysqlDS.setUser(props.getProperty(username));
             mysqlDS.setPassword(props.getProperty(password));
        // } catch (IOException e) {

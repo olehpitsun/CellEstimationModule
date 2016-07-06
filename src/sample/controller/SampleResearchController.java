@@ -308,13 +308,18 @@ public class SampleResearchController {
             Double equiDiameter = rs.getDouble(13);*/
 
             String image_name = getImageName(img_id);
-            bw.write(image_name + " " + contour_num + " " );
+            bw.write(image_name + ", " + contour_num + ", " );
 
             for(int i =3; i <= selectedNucleiParam.size()+2; i++){
                 Double tempvalue = rs.getDouble(i);
-                bw.write(tempvalue + " ");
+                //bw.write(tempvalue + " ");
+                if(i < selectedNucleiParam.size()+ 2){
+                    bw.write(tempvalue + ", ");
+                }else{
+                    bw.write(tempvalue + " ");
+                }
             }
-            bw.newLine();
+           // bw.newLine();
 
            /* bw.write(image_name + " " + contour_num + " " + contour_area + " " + contour_perimetr + " " + contour_height + " " + contour_width + " " + contour_circularity +
                     xc + " " + yc + " " + major_axis + " " + minor_axis + " " + theta + " " + equiDiameter);*/
