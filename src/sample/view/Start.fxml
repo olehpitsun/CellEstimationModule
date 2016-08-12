@@ -56,7 +56,7 @@
                                 <Button fx:id="researchNameButton" defaultButton="true" minWidth="63.0" mnemonicParsing="false" onAction="#setResearchName" prefHeight="28.0" prefWidth="63.0" text="OK" visible="false" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                                 <Button fx:id="loadImageButton" mnemonicParsing="false" onAction="#chooseFile" text="Завантажити зображення" visible="false" GridPane.rowIndex="3" />
-                                <Button fx:id="g" mnemonicParsing="false" onAction="#getMask" text="Завантажити зображення" visible="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                                <Button fx:id="g" mnemonicParsing="false" onAction="#folder" text="Завантажити зображення" visible="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
                             </children>
                         </GridPane>

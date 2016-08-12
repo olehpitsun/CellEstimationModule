@@ -97,6 +97,7 @@ public class StartController {
         this.mainApp = mainApp;
     }
 
+    public String rgbImagePath, fullpath;
     /**
      * Initializes the controller class. This method is automatically called
      * after the fxml file has been loaded.
@@ -137,7 +138,9 @@ public class StartController {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(f))) {
             for (Path file: stream) {
                 if(!file.toFile().isDirectory() ) {
-                    System.out.println(file.getFileName());
+                    //System.out.println("mask "+file.getFileName());
+
+
                     calculate(f, file.getFileName().toString());
                 }
             }
@@ -150,28 +153,280 @@ public class StartController {
 
     public void calculate(String path, String filename){
 
-        String fullpath = path + "//" + filename;
+        fullpath = path + "//" + filename;
         this.image = Highgui.imread( fullpath,  Highgui.CV_LOAD_IMAGE_COLOR);
+        //this.rgbImagePath = getRgbImagePathFromMask(filename);// rgb path
         sample.model.Image.setImageMat(this.image);
         originalImagePath = filename;
-        System.out.println("img " + originalImagePath);
         try {
             this.imageName(originalImagePath);
+            getMask();
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
         Mat newImage = sample.model.Image.getImageMat();
-        this.setOriginalImage(newImage);            // show the image
+       // this.setOriginalImage(newImage);            // show the image
         // call to object detection function
         try {
             this.SimpleDetect();
         }
-        catch (SQLException e) {
+        catch (Exception e) {
             e.printStackTrace();
         }
     }
 
 
+    public String getRgbImagePathFromMask(String maskPath){
+        String str = maskPath.split("[\\(\\)]")[1];
+        System.out.println("rgb "+str);
+        return str;
+    }
+
+
+
+    /**
+     * функція, де відбувається підрахунок параметрів обєктів на зображення
+     * та відбувається занесення їх в БД
+     * Спочатку визначаються усі контури,
+     * потім оброхунок по кожному контуру
+     * input:  (Mat) this.image
+     * @throws SQLException
+     */
+    @FXML
+    public void SimpleDetect() throws SQLException {
+
+        System.out.println(ResearchParam.getImg_name());
+
+        double Bx, By1, B_width, B_height, B_area, aspect_ratio, roudness, compactness;
+        double xc,yc,major_axis,minor_axis,theta;
+        Mat src = this.image;
+        Mat src_gray = new Mat();
+        Imgproc.cvtColor(src, src_gray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.blur(src_gray, src_gray, new Size(3, 3));
+
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+        Mat mMaskMat = new Mat();
+
+        Scalar lowerThreshold = new Scalar ( 0, 0, 0 );
+        Scalar upperThreshold = new Scalar ( 10, 10, 10 );
+        Core.inRange(src, lowerThreshold, upperThreshold, mMaskMat);
+        Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        List<Moments> mu = new ArrayList<Moments>(contours.size());
+        List<Point> mc = new ArrayList<Point>(contours.size());
+        Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
+        Rect rect ;
+
+        /*try {
+            //image = Highgui.imread("C:\\origins\\16042015_gisto_fibroadenoma\\"+this.rgbImagePath);
+            //getMask();
+        }catch (Exception e){
+            System.err.println(e + " " + this.rgbImagePath);
+        }*/
+        for( int i = 0; i< contours.size(); i++ )
+        {
+            rect = Imgproc.boundingRect(contours.get(i));
+            mu.add(i, Imgproc.moments(contours.get(i), false));
+
+            mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
+
+            MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
+            /** малювання обєктів**/
+            Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
+            Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+            Core.putText(drawing, Integer.toString(i) , new Point(rect.x-20,rect.y),
+                    Core.FONT_HERSHEY_TRIPLEX, 1.7 ,new  Scalar(255,255,255));
+
+            /*** Занесення даних до бази даних*/
+            double contourArea, perimetr, i_height, i_width, circular, equiDiameter;
+            MatOfPoint2f mMOP2f1;
+
+            contourArea = Imgproc.contourArea(contours.get(i));
+            perimetr = Imgproc.arcLength(contour2f, true);
+            i_height = rect.height;
+            i_width = rect.width;
+            circular = 4 * Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
+                    * Imgproc.arcLength(contour2f, true);
+
+
+            circular = Math.round(circular * 100.0) / 100.0;
+
+            /**
+             * блок підрахунку xc, yc, major_axis, minor_axis, theta
+             * якщо площа більше 2. то все йде норм, інакше 0 , щоб не викидало помилок
+             */
+            mMOP2f1 = new MatOfPoint2f();
+            contours.get(i).convertTo(mMOP2f1, CvType.CV_32FC2);
+
+            RotatedRect e = Imgproc.fitEllipse(mMOP2f1);
+            if(contourArea > 2) {
+                xc = e.center.x;
+                yc = e.center.y;
+
+                if(e.size.height >= e.size.width){
+                    major_axis = e.size.height;    // width >= height
+                    minor_axis = e.size.width;
+                }else{
+                    major_axis = e.size.width ;
+                    minor_axis = e.size.height;
+                }
+
+                theta = e.angle;
+
+            }else{
+                xc = 0;
+                yc = 0;
+                major_axis = 0;    // width >= height
+                minor_axis = 0;
+                theta = 0;
+            }
+
+            equiDiameter = sqrt(4 * contourArea / Math.PI);
+
+
+            Bx = e.boundingRect().x;
+            By1 = e.boundingRect().y;
+            B_width = e.boundingRect().width;
+            B_height = e.boundingRect().height;
+            B_area = e.boundingRect().area();
+            aspect_ratio = major_axis/minor_axis;
+            roudness = 4*contourArea / (Math.PI * pow(major_axis, 2));
+            compactness = Math.pow(perimetr,2) / 4*Math.PI * contourArea;
+
+
+            Connection con ;
+            com.mysql.jdbc.PreparedStatement stmt = null;
+            com.mysql.jdbc.ResultSet rs = null;
+            try {
+                con = DB.getConn();
+                String query = "INSERT INTO nuclei_params (image_id, contour_num, contour_area, contour_perimetr," +
+                        " contour_height, contour_width, contour_circularity, xc, yc, major_axis, minor_axis, theta," +
+                        " equiDiameter, Bx, By1, B_width, B_height, B_area, aspect_ratio, roudness, compactness)" +
+                        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                stmt = (PreparedStatement) con.prepareStatement(query);
+                stmt.setInt(1, ResearchParam.getImg_id());
+                stmt.setInt(2, i);
+                stmt.setDouble(3, contourArea);
+                stmt.setDouble(4, perimetr);
+                stmt.setDouble(5, i_height);
+                stmt.setDouble(6, i_width);
+                stmt.setDouble(7, circular);
+                stmt.setDouble(8, xc);
+                stmt.setDouble(9, yc);
+                stmt.setDouble(10, major_axis);
+                stmt.setDouble(11, minor_axis);
+                stmt.setDouble(12, theta);
+                stmt.setDouble(13, equiDiameter);
+                stmt.setDouble(14, Bx);
+                stmt.setDouble(15, By1);
+                stmt.setDouble(16, B_width);
+                stmt.setDouble(17, B_height);
+                stmt.setDouble(18, B_area);
+                stmt.setDouble(19, aspect_ratio);
+                stmt.setDouble(20, roudness);
+                stmt.setDouble(21, compactness);
+
+                stmt.executeUpdate();
+            }catch (NullPointerException ex) {
+                ex.printStackTrace();
+            }finally{
+                try {
+                    if(rs != null) rs.close();
+                    if(stmt != null) stmt.close();
+                    //if(con != null) con.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+            nucleiData.add(new Nuclei(i,contourArea,perimetr, i_height,i_width,circular, xc,yc,major_axis,minor_axis,
+                    theta,equiDiameter));
+        }
+        nucleiTable.setItems(getNucleiData());
+        this.setOriginalImage(drawing);
+    }
+
+    @FXML
+    public void getMask(){
+
+
+        String colorImageFileName = originalImagePath.substring(originalImagePath.indexOf('(')+1,originalImagePath.indexOf(')'));
+        Mat image = Highgui.imread("C:\\IMAGES\\test\\original\\"+colorImageFileName);
+
+        System.out.println("Маска "+fullpath);
+        System.out.println("Оригінад "+colorImageFileName);
+
+        Mat mask = Highgui.imread(fullpath, Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+
+        Rect rectangle = new Rect(10, 10, image.cols() - 20, image.rows() - 20);
+
+        Mat bgdModel = new Mat(); // extracted features for background
+        Mat fgdModel = new Mat(); // extracted features for foreground
+        Mat source = new Mat(1, 1, CvType.CV_8U, new Scalar(0));
+
+        convertToOpencvValues(mask); // from human readable values to OpenCV values
+
+        int iterCount = 1;
+        Imgproc.grabCut(image, mask, rectangle, bgdModel, fgdModel, iterCount, Imgproc.GC_INIT_WITH_MASK);
+
+
+
+        convertToHumanValues(mask); // back to human readable values
+        Imgproc.threshold(mask,mask,0,128,Imgproc.THRESH_TOZERO);
+
+        Mat foreground = new Mat(image.size(), CvType.CV_8UC1, new Scalar(255, 255, 255));
+        image.copyTo(foreground, mask);
+
+        Mat src_gray = new Mat();
+        Imgproc.cvtColor(foreground, src_gray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.blur(src_gray, src_gray, new Size(3, 3));
+
+        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
+        Mat hierarchy = new Mat();
+        Mat mMaskMat = new Mat();
+
+        Scalar lowerThreshold = new Scalar ( 0, 0, 0 );
+        Scalar upperThreshold = new Scalar ( 10, 10, 10 );
+        Core.inRange(foreground, lowerThreshold, upperThreshold, mMaskMat);
+
+        Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+        List<Moments> mu = new ArrayList<Moments>(contours.size());
+        List<Point> mc = new ArrayList<Point>(contours.size());
+        Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
+
+        Rect rect ;
+
+
+
+
+
+        for( int i = 0; i< contours.size(); i++ ) {
+            rect = null;
+            rect = Imgproc.boundingRect(contours.get(i));
+            Mat crop = foreground.submat(rect);
+
+            Mat rgba = crop;
+            Mat tempMat = crop;
+            rgba = new Mat(crop.cols(), crop.rows(), CvType.CV_8UC3);
+            crop.copyTo(rgba);
+
+            List<Mat> hsv_planes_temp = new ArrayList<Mat>(3);
+            Core.split(tempMat, hsv_planes_temp);
+
+            double threshValue1 = PreProcessingOperation.getHistAverage(crop, hsv_planes_temp.get(0));
+            System.out.println("thresh " + i + " " + threshValue1);
+
+            Core.rectangle(foreground, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 0, 250), 3);
+            Highgui.imwrite("C:\\IMAGES\\test\\"+ iterCount +".jpg", crop);
+            iterCount++;
+            Core.putText(foreground, Integer.toString(iterCount) , new Point(rect.x-20,rect.y),
+                    Core.FONT_HERSHEY_TRIPLEX, .7 ,new  Scalar(255,255,255));
+        }
+
+
+        this.setOriginalImage(foreground);
+    }
 
     public void chooseFile(ActionEvent actionEvent) throws IOException {
 
@@ -210,259 +465,6 @@ public class StartController {
             alert.showAndWait();
         }
     }
-
-    /**
-     * функція, де відбувається підрахунок параметрів обєктів на зображення
-     * та відбувається занесення їх в БД
-     * Спочатку визначаються усі контури,
-     * потім оброхунок по кожному контуру
-     * input:  (Mat) this.image
-     * @throws SQLException
-     */
-    @FXML
-    public void SimpleDetect() throws SQLException {
-
-        double xc,yc,major_axis,minor_axis,theta;
-        Mat src = this.image;
-        Mat src_gray = new Mat();
-        Imgproc.cvtColor(src, src_gray, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.blur(src_gray, src_gray, new Size(3, 3));
-
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Mat hierarchy = new Mat();
-        Mat mMaskMat = new Mat();
-
-        Scalar lowerThreshold = new Scalar ( 0, 0, 0 );
-        Scalar upperThreshold = new Scalar ( 10, 10, 10 );
-        Core.inRange(src, lowerThreshold, upperThreshold, mMaskMat);
-        Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-        List<Moments> mu = new ArrayList<Moments>(contours.size());
-        List<Point> mc = new ArrayList<Point>(contours.size());
-        Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
-        Rect rect ;
-
-        for( int i = 0; i< contours.size(); i++ )
-        {
-            rect = Imgproc.boundingRect(contours.get(i));
-            mu.add(i, Imgproc.moments(contours.get(i), false));
-            mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
-            MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
-            /** малювання обєктів**/
-            Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
-            Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
-            //////////////////////////////////////////////////////////////////////////////////////////////////////
-            Core.putText(drawing, Integer.toString(i) , new Point(rect.x-20,rect.y),
-                    Core.FONT_HERSHEY_TRIPLEX, 1.7 ,new  Scalar(255,255,255));
-            /*** Занесення даних до бази даних*/
-            double contourArea, perimetr, i_height, i_width, circular, equiDiameter;
-            MatOfPoint2f mMOP2f1;
-
-            contourArea = Imgproc.contourArea(contours.get(i));
-            perimetr = Imgproc.arcLength(contour2f, true);
-            i_height = rect.height;
-            i_width = rect.y;
-            circular = 4 * Math.PI * Imgproc.contourArea(contours.get(i)) / Imgproc.arcLength(contour2f, true)
-                    * Imgproc.arcLength(contour2f, true);
-
-
-            circular = Math.round(circular * 100.0) / 100.0;
-
-            System.out.println(" contourArea = " + contourArea);
-            System.out.println(" perimetr = " + perimetr);
-            System.out.println(" circular = " + circular);
-
-
-            /**
-             * блок підрахунку xc, yc, major_axis, minor_axis, theta
-             * якщо площа більше 2. то все йде норм, інакше 0 , щоб не викидало помилок
-             */
-            mMOP2f1 = new MatOfPoint2f();
-            contours.get(i).convertTo(mMOP2f1, CvType.CV_32FC2);
-
-            mMOP2f1.get(5,6);
-            if(contourArea > 2) {
-                RotatedRect e = Imgproc.fitEllipse(mMOP2f1);
-                xc = e.center.x;
-                yc = e.center.y;
-
-                if(e.size.height >= e.size.width){
-                    major_axis = e.size.height;    // width >= height
-                    minor_axis = e.size.width;
-                }else{
-                    major_axis = e.size.width ;
-                    minor_axis = e.size.height;
-                }
-
-                theta = e.angle;
-                e.boundingRect().area();
-
-                System.out.println(" xc = " + xc);
-                System.out.println(" yc = " + yc);
-                System.out.println(" major_axis = " + major_axis);
-                System.out.println(" minor_axis = " + minor_axis);
-                System.out.println(" angle = " + theta);
-                System.out.println(" Bx = " + e.boundingRect().x);
-                System.out.println(" By = " + e.boundingRect().y);
-                System.out.println(" B width = " + e.boundingRect().width);
-                System.out.println(" B height = " + e.boundingRect().height);
-                System.out.println(" Площа прямокутника = " + e.boundingRect().area());
-                System.out.println(" Aspect ratio = " + major_axis/minor_axis);
-                System.out.println(" Roudness = " + 4*contourArea / (Math.PI * pow(major_axis, 2)) );
-                System.out.println(" compactness  = " + Math.pow(perimetr,2) / 4*Math.PI * contourArea );
-
-
-            }else{
-                xc = 0;
-                yc = 0;
-                major_axis = 0;    // width >= height
-                minor_axis = 0;
-                theta = 0;
-            }
-            equiDiameter = sqrt(4 * contourArea / Math.PI);
-            System.out.println(" equiDiameter = " + equiDiameter);
-
-            Connection con ;
-            com.mysql.jdbc.PreparedStatement stmt = null;
-            com.mysql.jdbc.ResultSet rs = null;
-            try {
-                con = DB.getConn();
-                String query = "INSERT INTO nuclei_params (image_id, contour_num, contour_area, contour_perimetr," +
-                        " contour_height,contour_width, contour_circularity, xc, yc, major_axis, minor_axis, theta," +
-                        " equiDiameter  ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,? )";
-                stmt = (PreparedStatement) con.prepareStatement(query);
-                stmt.setInt(1, ResearchParam.getImg_id());
-                stmt.setInt(2, i);
-                stmt.setDouble(3, contourArea);
-                stmt.setDouble(4, perimetr);
-                stmt.setDouble(5, i_height);
-                stmt.setDouble(6, i_width);
-                stmt.setDouble(7, circular);
-                stmt.setDouble(8, xc);
-                stmt.setDouble(9, yc);
-                stmt.setDouble(10, major_axis);
-                stmt.setDouble(11, minor_axis);
-                stmt.setDouble(12, theta);
-                stmt.setDouble(13, equiDiameter);
-                stmt.executeUpdate();
-            }catch (NullPointerException e) {
-                e.printStackTrace();
-            }finally{
-                try {
-                    if(rs != null) rs.close();
-                    if(stmt != null) stmt.close();
-                    //if(con != null) con.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
-            nucleiData.add(new Nuclei(i,contourArea,perimetr, i_height,i_width,circular, xc,yc,major_axis,minor_axis,
-                    theta,equiDiameter));
-        }
-        nucleiTable.setItems(getNucleiData());
-        this.setOriginalImage(drawing);
-    }
-
-    @FXML
-    public void getMask(){
-        Mat image = Highgui.imread("C:\\IMAGES\\test\\JC30O.png");
-        Mat mask = Highgui.imread("C:\\IMAGES\\test\\mask1.png", Highgui.CV_LOAD_IMAGE_GRAYSCALE);
-
-        Rect rectangle = new Rect(10, 10, image.cols() - 20, image.rows() - 20);
-
-        Mat bgdModel = new Mat(); // extracted features for background
-        Mat fgdModel = new Mat(); // extracted features for foreground
-        Mat source = new Mat(1, 1, CvType.CV_8U, new Scalar(0));
-
-        convertToOpencvValues(mask); // from human readable values to OpenCV values
-
-        int iterCount = 1;
-        Imgproc.grabCut(image, mask, rectangle, bgdModel, fgdModel, iterCount, Imgproc.GC_INIT_WITH_MASK);
-
-
-        convertToHumanValues(mask); // back to human readable values
-        Imgproc.threshold(mask,mask,0,128,Imgproc.THRESH_TOZERO);
-
-        Mat foreground = new Mat(image.size(), CvType.CV_8UC1, new Scalar(255, 255, 255));
-        image.copyTo(foreground, mask);
-
-this.setOriginalImage(foreground);
-
-//------------------------------------------------------------------------------------------------------------------
-
-        Mat src_gray = new Mat();
-        Imgproc.cvtColor(foreground, src_gray, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.blur(src_gray, src_gray, new Size(3, 3));
-
-        List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
-        Mat hierarchy = new Mat();
-        Mat mMaskMat = new Mat();
-
-        Scalar lowerThreshold = new Scalar ( 0, 0, 0 );
-        Scalar upperThreshold = new Scalar ( 10, 10, 10 );
-        Core.inRange(foreground, lowerThreshold, upperThreshold, mMaskMat);
-
-        Imgproc.findContours(mMaskMat, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
-        List<Moments> mu = new ArrayList<Moments>(contours.size());
-        List<Point> mc = new ArrayList<Point>(contours.size());
-        Mat drawing = Mat.zeros( mMaskMat.size(), CvType.CV_8UC3 );
-
-        Rect rect ;
-
-        for( int i = 0; i< contours.size(); i++ ) {
-            rect=null;
-            rect = Imgproc.boundingRect(contours.get(i));
-            //Rect ROI = Rect(rect.x ,rect.y, rect.width, rect.height);
-
-            Mat crop = foreground.submat(rect );
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            Mat rgba =crop; Mat tempMat = crop;
-            rgba = new Mat(crop.cols(), crop.rows(), CvType.CV_8UC3);
-            crop.copyTo(rgba);
-
-            List<Mat> hsv_planes_temp = new ArrayList<Mat>(3);
-            Core.split(tempMat, hsv_planes_temp);
-
-            double threshValue1 = PreProcessingOperation.getHistAverage(crop, hsv_planes_temp.get(0));
-            System.out.println("thresh " + i + " " +  threshValue1);
-
-            /*
-            Core.rectangle( foreground, new Point(rect.x,rect.y), new Point(rect.x+rect.width,rect.y+rect.height), new Scalar(0,0,250), 3);
-            Highgui.imwrite("C:\\IMAGES\\test\\result.jpg", foreground);*/
-
-            Highgui.imwrite("C:\\IMAGES\\test\\img"+i+".jpg", crop);
-            mu.add(i, Imgproc.moments(contours.get(i), false));
-            mc.add(i, new Point(mu.get(i).get_m10() / mu.get(i).get_m00(), mu.get(i).get_m01() / mu.get(i).get_m00()));
-            MatOfPoint2f contour2f = new MatOfPoint2f(contours.get(i).toArray());
-            /** малювання обєктів**/
-            Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
-            Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
-            //////////////////////////////////////////////////////////////////////////////////////////////////////
-            Core.putText(drawing, Integer.toString(i), new Point(rect.x - 20, rect.y),
-                    Core.FONT_HERSHEY_TRIPLEX, 1.7, new Scalar(255, 255, 255));
-            /*** Занесення даних до бази даних*/
-            double contourArea, perimetr, i_height, i_width, circular, equiDiameter;
-            MatOfPoint2f mMOP2f1;
-
-            contourArea = Imgproc.contourArea(contours.get(i));
-            perimetr = Imgproc.arcLength(contour2f, true);
-            System.out.println("Square " + contourArea);
-            System.out.println("Perimetr " + perimetr);
-
-
-        }
-
-
-
-
-
-
-
-        //this.setOriginalImage(drawing);
-    }
-
     public double getHistAverage(Mat hsvImg, Mat hueValues)
     {
         // init
@@ -745,11 +747,10 @@ this.setOriginalImage(foreground);
     public void imageName(String imgN) throws SQLException {
 
         imgN = imgN.replace( ' ', '#' );
-        System.out.println(imgN);
 
         ResearchParam.setImg_name(imgN);
         Connection c = DB.getConn();
-        String query = "INSERT INTO images (research_id, image_name) VALUES (?,?)";
+        String query = "INSERT INTO images (research_id, image_path) VALUES (?,?)";
         PreparedStatement preparedStmt = null;
 
         preparedStmt = (PreparedStatement) c.prepareStatement(query);
