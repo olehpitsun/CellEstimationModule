@@ -234,16 +234,18 @@ public class StartController {
             MatOfPoint2f contour2f = new MatOfPoint2f( contours.get(i).toArray() );
             /** малювання обєктів**/
             Imgproc.drawContours(drawing, contours, i, new Scalar(255, 0, 0), 4, 1, hierarchy, 0, new Point());
-            Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
+           // Core.circle(drawing, mc.get(i), 4, new Scalar(0, 0, 255), -1, 2, 0);
             //////////////////////////////////////////////////////////////////////////////////////////////////////
-            Core.putText(drawing, Integer.toString(i) , new Point(rect.x-20,rect.y),
-                    Core.FONT_HERSHEY_TRIPLEX, 1.7 ,new  Scalar(255,255,255));
+            //Core.putText(drawing, Integer.toString(i) , new Point(rect.x-20,rect.y),
+              //      Core.FONT_HERSHEY_TRIPLEX, 1.7 ,new  Scalar(255,255,255));
 
             /*** Занесення даних до бази даних*/
             double contourArea, perimetr, i_height, i_width, circular, equiDiameter;
             MatOfPoint2f mMOP2f1;
 
             contourArea = Imgproc.contourArea(contours.get(i));
+
+            System.out.println("mask " + i + " " + contourArea);
             perimetr = Imgproc.arcLength(contour2f, true);
             i_height = rect.height;
             i_width = rect.width;
@@ -344,7 +346,7 @@ public class StartController {
                     theta,equiDiameter));
         }
         nucleiTable.setItems(getNucleiData());
-        this.setOriginalImage(drawing);
+        //this.setOriginalImage(drawing);
     }
 
     @FXML
@@ -414,10 +416,12 @@ public class StartController {
             List<Mat> hsv_planes_temp = new ArrayList<Mat>(3);
             Core.split(tempMat, hsv_planes_temp);
 
-            double threshValue1 = PreProcessingOperation.getHistAverage(crop, hsv_planes_temp.get(0));
-            System.out.println("thresh " + i + " " + threshValue1);
+            double contourArea = Imgproc.contourArea(contours.get(i));
 
-            Core.rectangle(foreground, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 0, 250), 3);
+            double threshValue1 = PreProcessingOperation.getHistAverage(crop, hsv_planes_temp.get(0));
+            System.out.println("thresh " + i + " " + threshValue1 + " contourArea " + contourArea);
+
+           // Core.rectangle(foreground, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 0, 250), 3);
             Highgui.imwrite("C:\\IMAGES\\test\\"+ iterCount +".jpg", crop);
             iterCount++;
             Core.putText(foreground, Integer.toString(iterCount) , new Point(rect.x-20,rect.y),
@@ -425,7 +429,7 @@ public class StartController {
         }
 
 
-        this.setOriginalImage(foreground);
+        //this.setOriginalImage(foreground);
     }
 
     public void chooseFile(ActionEvent actionEvent) throws IOException {
